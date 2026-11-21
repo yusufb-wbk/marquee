@@ -8,7 +8,8 @@ describe("csrf token", () => {
     const token = newCsrfToken();
     assert.equal(isCsrfToken(token), true);
     assert.equal(csrfMatches(token, token), true);
-    assert.equal(csrfMatches(token, `${token.slice(0, -1)}a`), false);
+    const last = token.endsWith("0") ? "1" : "0";
+    assert.equal(csrfMatches(token, `${token.slice(0, -1)}${last}`), false);
     assert.equal(csrfMatches(token, ""), false);
     assert.equal(csrfMatches(undefined, token), false);
   });

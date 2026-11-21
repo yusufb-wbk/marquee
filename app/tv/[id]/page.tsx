@@ -2,12 +2,13 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { EpisodeBoard } from "@/components/episode-board";
+import { readCsrfToken } from "@/components/csrf-field";
 import { EpisodeList } from "@/components/episode-list";
 import { LibraryNotice } from "@/components/library-notice";
 import { Message } from "@/components/message";
 import { Poster } from "@/components/poster";
 import { SchemaSetup } from "@/components/schema-setup";
+import { SeasonBrowser } from "@/components/season-browser";
 import { SeasonNav } from "@/components/season-nav";
 import { ShowStatusForm } from "@/components/show-status-form";
 import {
@@ -85,6 +86,7 @@ async function TvScreen({ params, searchParams }: TvPageProps) {
         <ShowStatusForm
           showId={show.id}
           current={progress.ok ? (progress.data.show?.status ?? null) : null}
+          rating={progress.ok ? (progress.data.show?.rating ?? null) : null}
           nextPath={nextPath}
         />
       ) : null}
@@ -92,19 +94,26 @@ async function TvScreen({ params, searchParams }: TvPageProps) {
         <p className="text-muted">TMDB has no seasons for this show yet.</p>
       ) : (
         <div className="grid gap-4">
-          <SeasonNav
-            showId={show.id}
-            seasons={show.seasons}
-            activeSeason={active?.seasonNumber ?? null}
-          />
-          {active ? (
+          {progress.ok ? null : (
+            <SeasonNav
+              showId={show.id}
+              seasons={show.seasons}
+              activeSeason={active?.seasonNumber ?? null}
+            />
+          )}
+          {active && progress.ok ? (
             <Suspense fallback={<p className="text-muted">Loading episodes…</p>}>
-              <SeasonEpisodes
+              <TrackedSeason
                 showId={show.id}
+                seasons={show.seasons}
                 season={active}
-                watches={progress.ok ? progress.data.episodes : null}
-                nextPath={nextPath}
+                watches={progress.data.episodes}
+                showTracked={progress.data.show !== null}
               />
+            </Suspense>
+          ) : active ? (
+            <Suspense fallback={<p className="text-muted">Loading episodes…</p>}>
+              <SeasonEpisodes showId={show.id} season={active} />
             </Suspense>
           ) : (
             <Message tone="error" title="That season is not listed">
@@ -154,16 +163,18 @@ function ShowHeader({ show }: { show: TvShow }) {
   );
 }
 
-async function SeasonEpisodes({
+async function TrackedSeason({
   showId,
+  seasons,
   season,
   watches,
-  nextPath,
+  showTracked,
 }: {
   showId: number;
+  seasons: SeasonSummary[];
   season: SeasonSummary;
-  watches: EpisodeWatch[] | null;
-  nextPath: string;
+  watches: EpisodeWatch[];
+  showTracked: boolean;
 }) {
   const result = await getTvSeason(showId, season.seasonNumber);
   if (!result.ok) {
@@ -181,16 +192,41 @@ async function SeasonEpisodes({
     );
   }
 
-  if (watches) {
+  const csrf = await readCsrfToken();
+  return (
+    <SeasonBrowser
+      csrf={csrf}
+      showId={showId}
+      seasons={seasons}
+      initialSeasonNumber={season.seasonNumber}
+      initialSeasonName={result.data.name}
+      initialEpisodes={result.data.episodes}
+      initialWatched={watches}
+      showTracked={showTracked}
+    />
+  );
+}
+
+async function SeasonEpisodes({
+  showId,
+  season,
+}: {
+  showId: number;
+  season: SeasonSummary;
+}) {
+  const result = await getTvSeason(showId, season.seasonNumber);
+  if (!result.ok) {
+    if (result.error.kind === "not_found") {
+      return (
+        <Message tone="error" title="That season is not listed">
+          TMDB has no episode list for {season.name}.
+        </Message>
+      );
+    }
     return (
-      <EpisodeBoard
-        showId={showId}
-        seasonNumber={season.seasonNumber}
-        seasonName={result.data.name}
-        episodes={result.data.episodes}
-        watches={watches}
-        nextPath={nextPath}
-      />
+      <Message tone="error" title="Episodes could not be loaded">
+        {result.error.message}
+      </Message>
     );
   }
 

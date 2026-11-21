@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
 import { LoginForm } from "@/app/login/login-form";
+import { CsrfField } from "@/components/csrf-field";
 import { authAlert } from "@/app/login/messages";
 import { Message } from "@/components/message";
 import { SetupPanel } from "@/components/setup-panel";
@@ -53,8 +54,8 @@ async function LoginGate({ searchParams }: LoginPageProps) {
       <header className="grid gap-2">
         <h1 className="font-display text-4xl tracking-tight">Sign in</h1>
         <p className="leading-7 text-muted">
-          Use your email and a password. Marquee sends them to Supabase from
-          the server and stores only a session cookie.
+          Continue with Google, or use an email and password. Marquee keeps
+          only a session cookie.
         </p>
       </header>
       {alert ? (
@@ -62,7 +63,17 @@ async function LoginGate({ searchParams }: LoginPageProps) {
           {alert.body}
         </Message>
       ) : null}
-      <div className="rounded-2xl border border-line bg-card p-4">
+      <div className="grid gap-4 rounded-2xl border border-line bg-card p-4">
+        <form action="/auth/google" method="post">
+          <CsrfField />
+          <button
+            type="submit"
+            className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-line px-4 text-base font-semibold"
+          >
+            Continue with Google
+          </button>
+        </form>
+        <p className="text-center text-sm text-muted">or use email</p>
         <LoginForm />
       </div>
     </div>

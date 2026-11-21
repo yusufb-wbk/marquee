@@ -291,3 +291,54 @@ export function parseMovie(body: unknown): Movie | null {
     genres: readGenres(body.genres),
   };
 }
+
+export type ImdbFind = {
+  movieId: number | null;
+  showId: number | null;
+  episode: {
+    showId: number;
+    seasonNumber: number;
+    episodeNumber: number;
+    name: string;
+    runtime: number | null;
+  } | null;
+};
+
+function firstResultId(value: unknown): number | null {
+  if (!Array.isArray(value) || !isRecord(value[0])) {
+    return null;
+  }
+  return readId(value[0].id);
+}
+
+function firstEpisode(value: unknown): ImdbFind["episode"] {
+  if (!Array.isArray(value) || !isRecord(value[0])) {
+    return null;
+  }
+  const row = value[0];
+  const showId = readId(row.show_id);
+  const seasonNumber = readSeasonNumber(row.season_number);
+  const episodeNumber = readId(row.episode_number);
+  if (showId === null || seasonNumber === null || episodeNumber === null) {
+    return null;
+  }
+  const name = readText(row.name);
+  return {
+    showId,
+    seasonNumber,
+    episodeNumber,
+    name: name.length > 0 ? name.slice(0, 300) : `Episode ${episodeNumber}`,
+    runtime: readRuntime(row.runtime),
+  };
+}
+
+export function parseImdbFind(body: unknown): ImdbFind | null {
+  if (!isRecord(body)) {
+    return null;
+  }
+  return {
+    movieId: firstResultId(body.movie_results),
+    showId: firstResultId(body.tv_results),
+    episode: firstEpisode(body.tv_episode_results),
+  };
+}

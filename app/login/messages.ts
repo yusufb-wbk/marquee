@@ -60,6 +60,11 @@ const alerts: Record<string, AuthAlert> = {
     title: "Reload the page and try again.",
     body: "That sign-in form was out of date.",
   },
+  google: {
+    tone: "error",
+    title: "Google sign-in did not finish.",
+    body: "In Supabase, enable the Google provider and allow this site's /auth/callback URL.",
+  },
   slow: {
     tone: "error",
     title: "Too many attempts.",

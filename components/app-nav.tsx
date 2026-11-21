@@ -7,6 +7,7 @@ const LINKS = [
   { href: "/up-next", label: "Next" },
   { href: "/upcoming", label: "Soon" },
   { href: "/", label: "Search" },
+  { href: "/watched", label: "Watched" },
   { href: "/discover", label: "Discover" },
   { href: "/stats", label: "Stats" },
 ] as const;
@@ -36,8 +37,8 @@ export function AppNav() {
                 aria-current={current ? "page" : undefined}
                 className={
                   current
-                    ? "inline-flex h-14 w-full items-center justify-center rounded-xl bg-card text-sm font-semibold text-accent"
-                    : "inline-flex h-14 w-full items-center justify-center rounded-xl text-sm font-semibold text-muted"
+                    ? "inline-flex h-14 w-full items-center justify-center rounded-xl bg-card text-xs font-semibold text-accent sm:text-sm"
+                    : "inline-flex h-14 w-full items-center justify-center rounded-xl text-xs font-semibold text-muted sm:text-sm"
                 }
               >
                 {link.label}

@@ -9,6 +9,8 @@ export type ShowRow = {
   year: string | null;
   poster_url: string | null;
   genres: string[];
+  rating: number | null;
+  imdb_id?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -22,6 +24,7 @@ export type EpisodeWatchRow = {
   runtime_minutes: number | null;
   rating: number | null;
   note: string | null;
+  imdb_id?: string | null;
   watched_at: string;
 };
 
@@ -37,6 +40,7 @@ export type MovieRow = {
   watched_on: string | null;
   rating: number | null;
   note: string | null;
+  imdb_id?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -61,6 +65,8 @@ export type Database = {
           year?: string | null;
           poster_url?: string | null;
           genres?: string[];
+          rating?: number | null;
+          imdb_id?: string | null;
           created_at?: string;
           updated_at?: string;
         },
@@ -70,6 +76,8 @@ export type Database = {
           year?: string | null;
           poster_url?: string | null;
           genres?: string[];
+          rating?: number | null;
+          imdb_id?: string | null;
           updated_at?: string;
         }
       >;
@@ -84,6 +92,7 @@ export type Database = {
           runtime_minutes?: number | null;
           rating?: number | null;
           note?: string | null;
+          imdb_id?: string | null;
           watched_at?: string;
         },
         {
@@ -91,6 +100,7 @@ export type Database = {
           runtime_minutes?: number | null;
           rating?: number | null;
           note?: string | null;
+          imdb_id?: string | null;
         }
       >;
       tracked_movies: Table<
@@ -107,6 +117,7 @@ export type Database = {
           watched_on?: string | null;
           rating?: number | null;
           note?: string | null;
+          imdb_id?: string | null;
           created_at?: string;
           updated_at?: string;
         },
@@ -120,6 +131,7 @@ export type Database = {
           watched_on?: string | null;
           rating?: number | null;
           note?: string | null;
+          imdb_id?: string | null;
           updated_at?: string;
         }
       >;

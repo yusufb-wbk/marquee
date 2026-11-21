@@ -60,6 +60,7 @@ export async function saveShowStatus(
   userId: string,
   tmdbId: number,
   status: string,
+  ratingRaw: FormDataEntryValue | null = null,
 ): Promise<Saved> {
   if (!isShowIntent(status)) {
     return { ok: false, error: "save" };
@@ -83,6 +84,11 @@ export async function saveShowStatus(
     return savedOr(show.error);
   }
 
+  const rating = parseRatingField(ratingRaw);
+  if (!rating.ok) {
+    return { ok: false, error: "rating" };
+  }
+
   const loaded = await getTvShow(tmdbId);
   if (!loaded.ok) {
     return { ok: false, error: loaded.error.kind === "not_found" ? "missing" : "save" };
@@ -100,6 +106,7 @@ export async function saveShowStatus(
         posterUrl: show.posterUrl,
         genres: show.genres,
       }),
+      rating: rating.rating,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id,tmdb_id" },

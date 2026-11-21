@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  applyWatchChange,
   episodeKey,
   episodesUpTo,
   isSeasonComplete,
@@ -57,6 +58,32 @@ describe("watched up to here", () => {
         { seasonNumber: 1, episodeNumber: 2 },
         { seasonNumber: 2, episodeNumber: 1 },
       ],
+    );
+  });
+
+  it("marks the tapped episode and the whole season in the open list", () => {
+    const season = catalog.filter((episode) => episode.seasonNumber === 1);
+    const watched = new Set<string>();
+    assert.deepEqual(
+      [...applyWatchChange(watched, "watch", season[0]!, season)].sort(),
+      ["1:1"],
+    );
+    assert.deepEqual(
+      [...applyWatchChange(watched, "season", season[0]!, season)].sort(),
+      ["1:1", "1:2"],
+    );
+    const upTo = applyWatchChange(
+      watched,
+      "upto",
+      { seasonNumber: 1, episodeNumber: 2 },
+      season,
+    );
+    assert.equal(upTo.has("1:1"), true);
+    assert.equal(upTo.has("1:2"), true);
+    upTo.add("1:1");
+    assert.equal(
+      applyWatchChange(upTo, "unwatch", season[0]!, season).has("1:1"),
+      false,
     );
   });
 

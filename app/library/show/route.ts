@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     if (tmdbId === null || status.length === 0) {
       return { ok: false, error: "save" };
     }
-    return saveShowStatus(userId, tmdbId, status);
+    return saveShowStatus(userId, tmdbId, status, formData.get("rating"));
   });
 }
 

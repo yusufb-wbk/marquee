@@ -19,6 +19,7 @@ export type TrackedShow = {
   year: string | null;
   posterUrl: string | null;
   genres: string[];
+  rating: number | null;
 };
 
 export type EpisodeWatch = {
@@ -29,6 +30,7 @@ export type EpisodeWatch = {
   runtimeMinutes: number | null;
   rating: number | null;
   note: string | null;
+  watchedAt: string;
 };
 
 export type TrackedMovie = {
@@ -85,7 +87,9 @@ export function libraryFailure(error: {
   return "save";
 }
 
-function mapShow(row: ShowRow): TrackedShow | null {
+function mapShow(
+  row: Omit<ShowRow, "rating"> & { rating?: number | null },
+): TrackedShow | null {
   if (!isShowStatus(row.status)) {
     return null;
   }
@@ -96,7 +100,24 @@ function mapShow(row: ShowRow): TrackedShow | null {
     year: row.year,
     posterUrl: row.poster_url,
     genres: row.genres,
+    rating: row.rating ?? null,
   };
+}
+
+const SHOW_COLUMNS =
+  "user_id, tmdb_id, status, title, year, poster_url, genres, rating, created_at, updated_at";
+const SHOW_COLUMNS_WITHOUT_RATING =
+  "user_id, tmdb_id, status, title, year, poster_url, genres, created_at, updated_at";
+
+function ratingColumnMissing(error: { message: string; code?: string }): boolean {
+  const message = error.message.toLowerCase();
+  return (
+    message.includes("rating") &&
+    (message.includes("does not exist") ||
+      message.includes("schema cache") ||
+      error.code === "42703" ||
+      error.code === "PGRST204")
+  );
 }
 
 function mapEpisode(row: EpisodeWatchRow): EpisodeWatch {
@@ -108,6 +129,7 @@ function mapEpisode(row: EpisodeWatchRow): EpisodeWatch {
     runtimeMinutes: row.runtime_minutes,
     rating: row.rating,
     note: row.note,
+    watchedAt: row.watched_at,
   };
 }
 
@@ -133,6 +155,58 @@ async function client(): Promise<SupabaseClient<Database>> {
   return createClient();
 }
 
+async function loadShowRows(supabase: SupabaseClient<Database>, userId: string) {
+  const withRating = await supabase
+    .from("tracked_shows")
+    .select(SHOW_COLUMNS)
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: false });
+  if (!withRating.error || !ratingColumnMissing(withRating.error)) {
+    return withRating;
+  }
+  const legacy = await supabase
+    .from("tracked_shows")
+    .select(SHOW_COLUMNS_WITHOUT_RATING)
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: false });
+  if (legacy.error) {
+    return legacy;
+  }
+  return {
+    ...legacy,
+    data: legacy.data.map((row) => ({ ...row, rating: null })),
+  };
+}
+
+async function loadShowRow(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  tmdbId: number,
+) {
+  const withRating = await supabase
+    .from("tracked_shows")
+    .select(SHOW_COLUMNS)
+    .eq("user_id", userId)
+    .eq("tmdb_id", tmdbId)
+    .maybeSingle();
+  if (!withRating.error || !ratingColumnMissing(withRating.error)) {
+    return withRating;
+  }
+  const legacy = await supabase
+    .from("tracked_shows")
+    .select(SHOW_COLUMNS_WITHOUT_RATING)
+    .eq("user_id", userId)
+    .eq("tmdb_id", tmdbId)
+    .maybeSingle();
+  if (legacy.error || legacy.data === null) {
+    return legacy;
+  }
+  return {
+    ...legacy,
+    data: { ...legacy.data, rating: null },
+  };
+}
+
 export async function loadLibrary(userId: string): Promise<
   LibraryResult<{
     shows: TrackedShow[];
@@ -142,11 +216,7 @@ export async function loadLibrary(userId: string): Promise<
 > {
   const supabase = await client();
   const [shows, movies, episodes] = await Promise.all([
-    supabase
-      .from("tracked_shows")
-      .select("user_id, tmdb_id, status, title, year, poster_url, genres, created_at, updated_at")
-      .eq("user_id", userId)
-      .order("updated_at", { ascending: false }),
+    loadShowRows(supabase, userId),
     supabase
       .from("tracked_movies")
       .select(
@@ -194,12 +264,7 @@ export async function loadShowProgress(
 ): Promise<LibraryResult<{ show: TrackedShow | null; episodes: EpisodeWatch[] }>> {
   const supabase = await client();
   const [show, episodes] = await Promise.all([
-    supabase
-      .from("tracked_shows")
-      .select("user_id, tmdb_id, status, title, year, poster_url, genres, created_at, updated_at")
-      .eq("user_id", userId)
-      .eq("tmdb_id", tmdbId)
-      .maybeSingle(),
+    loadShowRow(supabase, userId, tmdbId),
     supabase
       .from("episode_watches")
       .select(

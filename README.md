@@ -25,9 +25,13 @@ Restart the dev server after changing `.env.local`.
 
 ## Supabase, briefly
 
-Supabase Auth stores the account. The login form posts to the server, which sends the email and password to Supabase. Marquee then keeps a session cookie. On each request, a proxy refreshes that cookie, and pages call `getClaims()` to check the signature before showing search results.
+Supabase Auth stores the account. The login form posts to the server, which sends the email and password to Supabase, or starts Google sign-in. Marquee then keeps a session cookie. On each request, a proxy refreshes that cookie, and pages call `getClaims()` to check the signature before showing search results.
 
-Your list lives in three tables: `tracked_shows`, `episode_watches`, and `tracked_movies`. A row is visible only when `auth.uid()` matches that row's user id. Run `supabase/schema.sql` once in the Supabase SQL editor before tracking. If the tables are missing, Marquee shows that SQL on Up next.
+Google sign-in needs the Google provider turned on in the Supabase dashboard (Authentication → Providers → Google), using a Google OAuth client. In Supabase URL configuration, allow this site's `/auth/callback` address, including `http://localhost:3847/auth/callback` when you run it locally. Google's authorized redirect URI is the Supabase callback (`https://<project>.supabase.co/auth/v1/callback`), not Marquee's.
+
+Your list lives in three tables: `tracked_shows`, `episode_watches`, and `tracked_movies`. A row is visible only when `auth.uid()` matches that row's user id. Run `supabase/schema.sql` once in the Supabase SQL editor before tracking. Run it again on an existing project so show ratings and IMDb ids can be saved. If the tables are missing, Marquee shows that SQL on Up next.
+
+IMDb does not offer a sign-in for other apps. Export your ratings or watchlist as CSV from IMDb, then upload it on Import. Marquee matches each `tt` id through TMDB.
 
 For a first local account, either:
 
@@ -52,6 +56,6 @@ npm run build
 npm start
 ```
 
-Ratings are stored as whole numbers from 2 to 20 and shown divided by 2, so the screen only offers 1 to 10 in half steps. "Up next" skips specials. "Watched up to here" marks earlier regular episodes and stops at the one you tapped.
+Ratings are stored as whole numbers from 1 to 20 and shown divided by 2, so the screen offers 0.5 to 10 in half steps. "Up next" skips specials. "Watched up to here" marks earlier regular episodes and stops at the one you tapped. Watched has filters for type, genre, year, and your rating.
 
 On a phone, add Marquee to the home screen from the browser share sheet. Use the Light button in the header to switch themes.

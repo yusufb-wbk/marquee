@@ -53,6 +53,36 @@ export function isSeasonComplete(
  * A special marks only itself. A regular episode marks earlier regular
  * episodes, including earlier seasons, and stops at this episode.
  */
+export type WatchIntent = "watch" | "unwatch" | "upto" | "season";
+
+/** Local list update for a watch button. Earlier seasons stay as they are. */
+export function applyWatchChange(
+  watched: ReadonlySet<string>,
+  intent: WatchIntent,
+  target: EpisodeRef,
+  seasonEpisodes: readonly EpisodeRef[],
+): Set<string> {
+  const next = new Set(watched);
+  if (intent === "unwatch") {
+    next.delete(episodeKey(target));
+    return next;
+  }
+  if (intent === "watch") {
+    next.add(episodeKey(target));
+    return next;
+  }
+  const affected =
+    intent === "season"
+      ? seasonEpisodes.filter(
+          (episode) => episode.seasonNumber === target.seasonNumber,
+        )
+      : episodesUpTo(seasonEpisodes, target);
+  for (const episode of affected) {
+    next.add(episodeKey(episode));
+  }
+  return next;
+}
+
 export function episodesUpTo(
   episodes: readonly EpisodeRef[],
   target: EpisodeRef,

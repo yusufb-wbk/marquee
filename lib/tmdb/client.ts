@@ -7,10 +7,12 @@ import { readEnv } from "@/lib/env";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { normalizeSearchQuery } from "@/lib/search-query";
 import {
+  parseImdbFind,
   parseMovie,
   parseSearchResults,
   parseTvSeason,
   parseTvShow,
+  type ImdbFind,
 } from "@/lib/tmdb/parse";
 import {
   TMDB_ERROR_KINDS,
@@ -341,6 +343,33 @@ async function listPopularCached(mediaType: MediaType): Promise<SearchTitle[]> {
     raiseTmdb(failure("bad_response"));
   }
   return titles;
+}
+
+export async function findByImdbId(imdbId: string): Promise<TmdbResult<ImdbFind>> {
+  await connection();
+  if (!/^tt\d{7,10}$/.test(imdbId)) {
+    return { ok: false, error: failure("not_found") };
+  }
+  const blocked = gateTmdb();
+  if (blocked) {
+    return { ok: false, error: blocked };
+  }
+  return runCached(() => findByImdbCached(imdbId));
+}
+
+async function findByImdbCached(imdbId: string): Promise<ImdbFind> {
+  "use cache";
+  cacheLife("hours");
+
+  const body = await tmdbGet(`/find/${imdbId}`, {
+    external_source: "imdb_id",
+    language: "en-US",
+  });
+  const found = parseImdbFind(body);
+  if (!found) {
+    raiseTmdb(failure("bad_response"));
+  }
+  return found;
 }
 
 export async function getMovie(id: number): Promise<TmdbResult<Movie>> {
