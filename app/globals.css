@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-:root {
+:root,
+[data-theme="dark"] {
   --background: #14110e;
   --foreground: #f6f1e7;
   --muted: #b7aa9b;
@@ -12,6 +13,22 @@
   --danger-bg: #3a221c;
   --notice: #d7eccf;
   --notice-bg: #1d2a1c;
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --background: #f6f1e7;
+  --foreground: #1c140e;
+  --muted: #6d5c4d;
+  --card: #fffaf3;
+  --line: #e4d5c4;
+  --accent: #b8751a;
+  --accent-ink: #fff8ee;
+  --danger: #8a2e22;
+  --danger-bg: #fde8e3;
+  --notice: #1f4d32;
+  --notice-bg: #e5f4e4;
+  color-scheme: light;
 }
 
 @theme inline {

@@ -1,8 +1,6 @@
 # Marquee
 
-A personal show and movie tracker. This version lets you sign in, search The Movie Database, and open a show's episode list or a movie's detail page.
-
-Tracking, up next, and stats come in later versions.
+A personal show and movie tracker. Sign in, search The Movie Database, keep a watch list, mark episodes, and see what is up next.
 
 ## Run it locally
 
@@ -29,7 +27,7 @@ Restart the dev server after changing `.env.local`.
 
 Supabase Auth stores the account. The login form posts to the server, which sends the email and password to Supabase. Marquee then keeps a session cookie. On each request, a proxy refreshes that cookie, and pages call `getClaims()` to check the signature before showing search results.
 
-There is no app table yet. Supabase's own `auth.users` table is not readable with the publishable key. The next version will add your watch list in Postgres, with a policy that a row is visible only when `auth.uid()` matches that row's user id. That check runs in the database.
+Your list lives in three tables: `tracked_shows`, `episode_watches`, and `tracked_movies`. A row is visible only when `auth.uid()` matches that row's user id. Run `supabase/schema.sql` once in the Supabase SQL editor before tracking. If the tables are missing, Marquee shows that SQL on Up next.
 
 For a first local account, either:
 
@@ -48,7 +46,12 @@ These match the current Supabase guide for Next.js 16 (`proxy.ts`, `getClaims()`
 
 ```bash
 npm run dev    # http://localhost:3847
+npm test       # progress, rating, calendar, and stats checks
 npm run lint
 npm run build
 npm start
 ```
+
+Ratings are stored as whole numbers from 2 to 20 and shown divided by 2, so the screen only offers 1 to 10 in half steps. "Up next" skips specials. "Watched up to here" marks earlier regular episodes and stops at the one you tapped.
+
+On a phone, add Marquee to the home screen from the browser share sheet. Use the Light button in the header to switch themes.

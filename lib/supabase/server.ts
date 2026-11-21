@@ -1,8 +1,10 @@
 import "server-only";
 
 import { createServerClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
+import type { Database } from "@/lib/library/database";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 
 /**
@@ -10,7 +12,7 @@ import { getSupabaseEnv } from "@/lib/supabase/env";
  * The session lives in cookies. Proxy refreshes those cookies;
  * Server Components often cannot write them, so setAll ignores that failure.
  */
-export async function createClient() {
+export async function createClient(): Promise<SupabaseClient<Database>> {
   const env = getSupabaseEnv();
   if (!env) {
     throw new Error("Supabase is not configured.");
@@ -18,7 +20,7 @@ export async function createClient() {
 
   const cookieStore = await cookies();
 
-  return createServerClient(env.url, env.publishableKey, {
+  return createServerClient<Database>(env.url, env.publishableKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();

@@ -27,7 +27,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
 async function LoginGate({ searchParams }: LoginPageProps) {
   const status = await getAuthStatus();
   if (status.state === "signed-in") {
-    redirect("/");
+    redirect("/up-next");
   }
 
   if (status.state === "unconfigured") {

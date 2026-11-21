@@ -1,5 +1,7 @@
 import type {
+  AiringEpisode,
   Episode,
+  MediaType,
   Movie,
   SearchTitle,
   SeasonSummary,
@@ -89,14 +91,17 @@ function readGenres(value: unknown): string[] {
   return names;
 }
 
-export function parseSearchResults(body: unknown): SearchTitle[] | null {
+export function parseSearchResults(
+  body: unknown,
+  fallbackMediaType: MediaType | null = null,
+): SearchTitle[] | null {
   if (!isRecord(body) || !Array.isArray(body.results)) {
     return null;
   }
 
   const titles: SearchTitle[] = [];
   for (const item of body.results) {
-    const title = parseSearchTitle(item);
+    const title = parseSearchTitle(item, fallbackMediaType);
     if (title) {
       titles.push(title);
     }
@@ -104,11 +109,17 @@ export function parseSearchResults(body: unknown): SearchTitle[] | null {
   return titles;
 }
 
-function parseSearchTitle(value: unknown): SearchTitle | null {
+function parseSearchTitle(
+  value: unknown,
+  fallbackMediaType: MediaType | null,
+): SearchTitle | null {
   if (!isRecord(value)) {
     return null;
   }
-  const mediaType = value.media_type;
+  const mediaType =
+    value.media_type === "movie" || value.media_type === "tv"
+      ? value.media_type
+      : fallbackMediaType;
   if (mediaType !== "movie" && mediaType !== "tv") {
     return null;
   }
@@ -166,6 +177,25 @@ export function parseTvShow(body: unknown): TvShow | null {
     status: status.length > 0 ? status : null,
     genres: readGenres(body.genres),
     seasons,
+    nextEpisode: parseNextEpisode(body.next_episode_to_air),
+  };
+}
+
+function parseNextEpisode(value: unknown): AiringEpisode | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+  const seasonNumber = readSeasonNumber(value.season_number);
+  const episodeNumber = readId(value.episode_number);
+  if (seasonNumber === null || episodeNumber === null) {
+    return null;
+  }
+  const name = readText(value.name);
+  return {
+    seasonNumber,
+    episodeNumber,
+    name: name.length > 0 ? name : `Episode ${episodeNumber}`,
+    airDate: readDate(value.air_date),
   };
 }
 

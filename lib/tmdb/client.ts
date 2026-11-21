@@ -12,6 +12,7 @@ import {
 } from "@/lib/tmdb/parse";
 import {
   TMDB_ERROR_KINDS,
+  type MediaType,
   type Movie,
   type SearchTitle,
   type TmdbError,
@@ -237,6 +238,49 @@ async function getTvSeasonCached(
     raiseTmdb(failure("bad_response"));
   }
   return season;
+}
+
+export async function listTrending(): Promise<TmdbResult<SearchTitle[]>> {
+  await connection();
+  if (!hasTmdbCredentials()) {
+    return { ok: false, error: failure("missing_key") };
+  }
+  return runCached(() => listTrendingCached());
+}
+
+async function listTrendingCached(): Promise<SearchTitle[]> {
+  "use cache";
+  cacheLife("hours");
+
+  const body = await tmdbGet("/trending/all/week", { language: "en-US" });
+  const titles = parseSearchResults(body);
+  if (!titles) {
+    raiseTmdb(failure("bad_response"));
+  }
+  return titles;
+}
+
+export async function listPopular(
+  mediaType: MediaType,
+): Promise<TmdbResult<SearchTitle[]>> {
+  await connection();
+  if (!hasTmdbCredentials()) {
+    return { ok: false, error: failure("missing_key") };
+  }
+  return runCached(() => listPopularCached(mediaType));
+}
+
+async function listPopularCached(mediaType: MediaType): Promise<SearchTitle[]> {
+  "use cache";
+  cacheLife("hours");
+
+  const path = mediaType === "tv" ? "/tv/popular" : "/movie/popular";
+  const body = await tmdbGet(path, { language: "en-US" });
+  const titles = parseSearchResults(body, mediaType);
+  if (!titles) {
+    raiseTmdb(failure("bad_response"));
+  }
+  return titles;
 }
 
 export async function getMovie(id: number): Promise<TmdbResult<Movie>> {

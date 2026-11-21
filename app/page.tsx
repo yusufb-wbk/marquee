@@ -34,8 +34,7 @@ async function SearchScreen({ searchParams }: HomePageProps) {
       <header className="grid gap-2">
         <h1 className="font-display text-4xl tracking-tight">Find a title</h1>
         <p className="leading-7 text-muted">
-          Search for a show or a movie. Open a show to see its seasons and
-          episodes.
+          Search for a show or a movie, then add it to your list.
         </p>
       </header>
       <SearchForm query={query} />

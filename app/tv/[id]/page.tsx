@@ -2,23 +2,27 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { EpisodeBoard } from "@/components/episode-board";
 import { EpisodeList } from "@/components/episode-list";
+import { LibraryNotice } from "@/components/library-notice";
 import { Message } from "@/components/message";
 import { Poster } from "@/components/poster";
+import { SchemaSetup } from "@/components/schema-setup";
 import { SeasonNav } from "@/components/season-nav";
+import { ShowStatusForm } from "@/components/show-status-form";
 import {
   firstQueryValue,
-  formatAirDate,
   parsePositiveInt,
   parseSeasonNumber,
 } from "@/lib/format";
+import { loadShowProgress, type EpisodeWatch } from "@/lib/library/queries";
 import { requireUser } from "@/lib/require-user";
 import { getTvSeason, getTvShow } from "@/lib/tmdb/client";
 import type { SeasonSummary, TvShow } from "@/lib/tmdb/types";
 
 type TvPageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ season?: string | string[] }>;
+  searchParams: Promise<{ season?: string | string[]; library?: string | string[] }>;
 };
 
 export const metadata = {
@@ -34,7 +38,7 @@ export default function TvPage({ params, searchParams }: TvPageProps) {
 }
 
 async function TvScreen({ params, searchParams }: TvPageProps) {
-  await requireUser();
+  const user = await requireUser();
   const id = parsePositiveInt((await params).id);
   if (id === null) {
     notFound();
@@ -53,17 +57,37 @@ async function TvScreen({ params, searchParams }: TvPageProps) {
   }
 
   const show = showResult.data;
-  const requestedRaw = firstQueryValue((await searchParams).season).trim();
+  const query = await searchParams;
+  const requestedRaw = firstQueryValue(query.season).trim();
+  const libraryCode = firstQueryValue(query.library);
   const requested =
     requestedRaw.length > 0 ? parseSeasonNumber(requestedRaw) : null;
   const active = chooseSeason(show.seasons, requestedRaw, requested);
+  const progress = await loadShowProgress(user.id, show.id);
+  const nextPath = active
+    ? `/tv/${show.id}?season=${active.seasonNumber}`
+    : `/tv/${show.id}`;
 
   return (
     <div className="grid gap-6">
-      <Link href="/" className="text-sm text-muted">
-        Back to search
+      <Link href="/up-next" className="text-sm text-muted">
+        Back to up next
       </Link>
+      <LibraryNotice code={libraryCode} />
+      {!progress.ok && progress.error === "schema" ? <SchemaSetup /> : null}
+      {!progress.ok && progress.error !== "schema" ? (
+        <Message tone="error" title="Your progress could not be loaded">
+          The episode list is still here. Tracking changes may not save.
+        </Message>
+      ) : null}
       <ShowHeader show={show} />
+      {progress.ok || progress.error === "schema" ? (
+        <ShowStatusForm
+          showId={show.id}
+          current={progress.ok ? (progress.data.show?.status ?? null) : null}
+          nextPath={nextPath}
+        />
+      ) : null}
       {show.seasons.length === 0 ? (
         <p className="text-muted">TMDB has no seasons for this show yet.</p>
       ) : (
@@ -75,7 +99,12 @@ async function TvScreen({ params, searchParams }: TvPageProps) {
           />
           {active ? (
             <Suspense fallback={<p className="text-muted">Loading episodes…</p>}>
-              <SeasonEpisodes showId={show.id} season={active} />
+              <SeasonEpisodes
+                showId={show.id}
+                season={active}
+                watches={progress.ok ? progress.data.episodes : null}
+                nextPath={nextPath}
+              />
             </Suspense>
           ) : (
             <Message tone="error" title="That season is not listed">
@@ -128,9 +157,13 @@ function ShowHeader({ show }: { show: TvShow }) {
 async function SeasonEpisodes({
   showId,
   season,
+  watches,
+  nextPath,
 }: {
   showId: number;
   season: SeasonSummary;
+  watches: EpisodeWatch[] | null;
+  nextPath: string;
 }) {
   const result = await getTvSeason(showId, season.seasonNumber);
   if (!result.ok) {
@@ -148,18 +181,22 @@ async function SeasonEpisodes({
     );
   }
 
-  const aired = formatAirDate(season.airDate);
-  const countLabel =
-    result.data.episodes.length === 1
-      ? "1 episode"
-      : `${result.data.episodes.length} episodes`;
+  if (watches) {
+    return (
+      <EpisodeBoard
+        showId={showId}
+        seasonNumber={season.seasonNumber}
+        seasonName={result.data.name}
+        episodes={result.data.episodes}
+        watches={watches}
+        nextPath={nextPath}
+      />
+    );
+  }
 
   return (
     <section className="grid gap-2">
       <h2 className="font-display text-2xl">{result.data.name}</h2>
-      <p className="text-sm text-muted">
-        {[countLabel, aired].filter((part): part is string => Boolean(part)).join(" · ")}
-      </p>
       <EpisodeList episodes={result.data.episodes} />
     </section>
   );

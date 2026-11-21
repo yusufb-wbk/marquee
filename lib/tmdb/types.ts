@@ -37,6 +37,13 @@ export type SeasonSummary = {
   airDate: string | null;
 };
 
+export type AiringEpisode = {
+  seasonNumber: number;
+  episodeNumber: number;
+  name: string;
+  airDate: string | null;
+};
+
 export type TvShow = {
   id: number;
   name: string;
@@ -46,6 +53,7 @@ export type TvShow = {
   status: string | null;
   genres: string[];
   seasons: SeasonSummary[];
+  nextEpisode: AiringEpisode | null;
 };
 
 export type Episode = {

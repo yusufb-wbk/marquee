@@ -24,7 +24,7 @@ function safeNextPath(value: string): string {
     value.includes("\\") ||
     value.includes("://")
   ) {
-    return "/";
+    return "/up-next";
   }
   return value;
 }
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type");
-  const next = searchParams.get("next") ?? "/";
+  const next = searchParams.get("next") ?? "/up-next";
   const destination = safeNextPath(next);
 
   if (!getSupabaseEnv() || !tokenHash || !type || !isEmailOtpType(type)) {

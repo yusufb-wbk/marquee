@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     return redirectTo(request, "/login?error=password");
   }
 
-  const response = redirectTo(request, "/");
+  const response = redirectTo(request, "/up-next");
   const supabase = supabaseForResponse(request, response);
   if (!supabase) {
     return redirectTo(request, "/login?error=unconfigured");
