@@ -27,7 +27,7 @@ Restart the dev server after changing `.env.local`.
 
 ## Supabase, briefly
 
-Supabase Auth stores the account. The login form posts to a Server Action, which sends the email and password to Supabase. Marquee then keeps a session cookie. On each request, a proxy refreshes that cookie, and pages call `getClaims()` to check the signature before showing search results.
+Supabase Auth stores the account. The login form posts to the server, which sends the email and password to Supabase. Marquee then keeps a session cookie. On each request, a proxy refreshes that cookie, and pages call `getClaims()` to check the signature before showing search results.
 
 There is no app table yet. Supabase's own `auth.users` table is not readable with the publishable key. The next version will add your watch list in Postgres, with a policy that a row is visible only when `auth.uid()` matches that row's user id. That check runs in the database.
 

@@ -1,9 +1,8 @@
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { type NextRequest } from "next/server";
-import { redirect } from "next/navigation";
 
-import { createClient } from "@/lib/supabase/server";
 import { getSupabaseEnv } from "@/lib/supabase/env";
+import { redirectTo, supabaseForResponse } from "@/lib/supabase/route";
 
 const EMAIL_OTP_TYPES = [
   "signup",
@@ -38,18 +37,23 @@ export async function GET(request: NextRequest) {
   const destination = safeNextPath(next);
 
   if (!getSupabaseEnv() || !tokenHash || !type || !isEmailOtpType(type)) {
-    redirect("/login?error=confirm");
+    return redirectTo(request, "/login?error=confirm");
   }
 
-  const supabase = await createClient();
+  const response = redirectTo(request, destination);
+  const supabase = supabaseForResponse(request, response);
+  if (!supabase) {
+    return redirectTo(request, "/login?error=confirm");
+  }
+
   const { error } = await supabase.auth.verifyOtp({
     type,
     token_hash: tokenHash,
   });
 
   if (error) {
-    redirect("/login?error=confirm");
+    return redirectTo(request, "/login?error=confirm");
   }
 
-  redirect(destination);
+  return response;
 }

@@ -1,4 +1,3 @@
-import { signOut } from "@/app/login/actions";
 import { getAuthStatus } from "@/lib/auth";
 
 export async function AccountMenu() {
@@ -14,7 +13,7 @@ export async function AccountMenu() {
       <p className="max-w-40 truncate text-sm text-muted" title={label}>
         {label}
       </p>
-      <form action={signOut}>
+      <form action="/auth/signout" method="post">
         <button
           type="submit"
           className="inline-flex h-11 items-center justify-center rounded-xl border border-line px-4 text-sm font-medium"

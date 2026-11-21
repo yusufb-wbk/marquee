@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
 import { LoginForm } from "@/app/login/login-form";
+import { authAlert } from "@/app/login/messages";
 import { Message } from "@/components/message";
 import { SetupPanel } from "@/components/setup-panel";
 import { getAuthStatus } from "@/lib/auth";
@@ -44,7 +45,8 @@ async function LoginGate({ searchParams }: LoginPageProps) {
   }
 
   const params = await searchParams;
-  const confirmFailed = firstQueryValue(params.error) === "confirm";
+  const code = firstQueryValue(params.error);
+  const alert = code.length > 0 ? authAlert(code) : null;
 
   return (
     <div className="mx-auto grid w-full max-w-md gap-6">
@@ -55,9 +57,9 @@ async function LoginGate({ searchParams }: LoginPageProps) {
           the server and stores only a session cookie.
         </p>
       </header>
-      {confirmFailed ? (
-        <Message tone="error" title="That confirmation link did not work">
-          It may have expired. Log in, or create the account again.
+      {alert ? (
+        <Message tone={alert.tone} title={alert.title}>
+          {alert.body}
         </Message>
       ) : null}
       <div className="rounded-2xl border border-line bg-card p-4">
