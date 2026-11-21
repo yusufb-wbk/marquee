@@ -1,4 +1,4 @@
-/** Stored ratings are 2–20. The screen shows that number divided by 2. */
+/** Stored ratings are 1–20. The screen shows that number divided by 2, from 0.5 to 10. */
 
 export function ratingToStored(display: number): number | null {
   if (!Number.isFinite(display)) {
@@ -8,14 +8,14 @@ export function ratingToStored(display: number): number | null {
   if (Math.abs(display * 2 - doubled) > 1e-8) {
     return null;
   }
-  if (doubled < 2 || doubled > 20) {
+  if (doubled < 1 || doubled > 20) {
     return null;
   }
   return doubled;
 }
 
 export function ratingToDisplay(stored: number): number | null {
-  if (!Number.isInteger(stored) || stored < 2 || stored > 20) {
+  if (!Number.isInteger(stored) || stored < 1 || stored > 20) {
     return null;
   }
   return stored / 2;
@@ -58,10 +58,10 @@ export function parseNoteField(
   return { ok: true, note: note.length > 0 ? note : null };
 }
 
-/** Five stars, scored out of 10. One click sets a half star, the next fills it. */
+/** Ten stars. One click sets the half (0.5), the next click fills that star. */
 export function nextStarRating(current: number | null, star: number): number {
-  const half = star * 2 - 1;
-  const full = star * 2;
+  const half = star - 0.5;
+  const full = star;
   if (current === half) {
     return full;
   }
@@ -72,5 +72,6 @@ export function nextStarRating(current: number | null, star: number): number {
 }
 
 export const RATING_STEPS = [
-  1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10,
+  0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5,
+  10,
 ] as const;

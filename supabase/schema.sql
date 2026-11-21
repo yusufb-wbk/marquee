@@ -24,7 +24,7 @@ create table if not exists public.episode_watches (
   episode_number integer not null check (episode_number between 1 and 1000),
   name text not null check (char_length(name) between 1 and 300),
   runtime_minutes integer check (runtime_minutes is null or runtime_minutes > 0),
-  rating smallint check (rating is null or rating between 2 and 20),
+  rating smallint check (rating is null or rating between 1 and 20),
   note text check (note is null or char_length(note) <= 500),
   watched_at timestamptz not null default now(),
   primary key (user_id, show_tmdb_id, season_number, episode_number)
@@ -43,7 +43,7 @@ create table if not exists public.tracked_movies (
   genres text[] not null default '{}',
   runtime_minutes integer check (runtime_minutes is null or runtime_minutes > 0),
   watched_on date,
-  rating smallint check (rating is null or rating between 2 and 20),
+  rating smallint check (rating is null or rating between 1 and 20),
   note text check (note is null or char_length(note) <= 500),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -85,3 +85,14 @@ create policy "tracked_movies_own"
 grant select, insert, update, delete on public.tracked_shows to authenticated;
 grant select, insert, update, delete on public.episode_watches to authenticated;
 grant select, insert, update, delete on public.tracked_movies to authenticated;
+
+-- Ratings now include 0.5 (stored as 1). Safe to run again on an existing project.
+alter table public.episode_watches drop constraint if exists episode_watches_rating_check;
+alter table public.episode_watches
+  add constraint episode_watches_rating_check
+  check (rating is null or rating between 1 and 20);
+
+alter table public.tracked_movies drop constraint if exists tracked_movies_rating_check;
+alter table public.tracked_movies
+  add constraint tracked_movies_rating_check
+  check (rating is null or rating between 1 and 20);

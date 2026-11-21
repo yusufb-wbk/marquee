@@ -2,8 +2,8 @@ import { type NextRequest } from "next/server";
 
 import { authErrorCode } from "@/app/login/messages";
 import { clientAddress } from "@/lib/client-address";
+import { CSRF_COOKIE, csrfMatches } from "@/lib/csrf";
 import { consumeRateLimit } from "@/lib/rate-limit";
-import { requestIsSameOrigin } from "@/lib/same-origin";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 import { redirectTo, supabaseForResponse } from "@/lib/supabase/route";
 
@@ -12,11 +12,10 @@ const SIGNUP_GLOBAL = { limit: 8, windowMs: 60 * 60 * 1000 };
 const LOGIN_PER_ADDRESS = { limit: 30, windowMs: 15 * 60 * 1000 };
 
 export async function POST(request: NextRequest) {
-  if (!requestIsSameOrigin(request)) {
+  const formData = await request.formData();
+  if (!csrfMatches(request.cookies.get(CSRF_COOKIE)?.value, formData.get("csrf"))) {
     return redirectTo(request, "/login?error=rejected");
   }
-
-  const formData = await request.formData();
   const intent = formData.get("intent") === "signup" ? "signup" : "login";
 
   if (!getSupabaseEnv()) {

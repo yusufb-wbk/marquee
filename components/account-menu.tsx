@@ -1,3 +1,4 @@
+import { CsrfField } from "@/components/csrf-field";
 import { getAuthStatus } from "@/lib/auth";
 
 export async function AccountMenu() {
@@ -14,6 +15,7 @@ export async function AccountMenu() {
         {label}
       </p>
       <form action="/auth/signout" method="post">
+        <CsrfField />
         <button
           type="submit"
           className="inline-flex h-11 items-center justify-center rounded-xl border border-line px-4 text-sm font-medium"

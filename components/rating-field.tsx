@@ -35,8 +35,8 @@ export function RatingField({ stored }: { stored: number | null }) {
           </button>
         ) : null}
       </div>
-      <div className="flex items-center gap-1" role="group" aria-label="Rating out of 10">
-        {[1, 2, 3, 4, 5].map((star) => (
+      <div className="grid grid-cols-10 gap-1" role="group" aria-label="Rating out of 10">
+        {Array.from({ length: 10 }, (_, index) => index + 1).map((star) => (
           <StarButton
             key={star}
             star={star}
@@ -61,10 +61,10 @@ function StarButton({
   value: number | null;
   onChoose: () => void;
 }) {
-  const half = star * 2 - 1;
-  const full = star * 2;
-  const points = (value ?? 0) - (star - 1) * 2;
-  const fraction = Math.min(1, Math.max(0, points / 2));
+  const half = star - 0.5;
+  const full = star;
+  const points = (value ?? 0) - (star - 1);
+  const fraction = Math.min(1, Math.max(0, points));
   const pressed = value === half || value === full;
 
   return (
@@ -77,7 +77,7 @@ function StarButton({
           : `${half} out of 10`
       }
       onClick={onChoose}
-      className="inline-flex h-12 w-12 items-center justify-center"
+      className="inline-flex h-11 w-full items-center justify-center"
     >
       <StarGlyph fraction={fraction} />
     </button>
@@ -88,7 +88,7 @@ function StarGlyph({ fraction }: { fraction: number }) {
   const clipId = useId().replaceAll(":", "");
 
   return (
-    <svg viewBox="0 0 24 24" className="h-8 w-8" aria-hidden="true">
+    <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden="true">
       <defs>
         <clipPath id={clipId}>
           <rect x="0" y="0" width={fraction * 24} height="24" />

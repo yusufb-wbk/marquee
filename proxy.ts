@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { CSRF_COOKIE, csrfForRequest } from "@/lib/csrf";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 
 /**
@@ -9,9 +10,12 @@ import { getSupabaseEnv } from "@/lib/supabase/env";
  * Proxy alone is not the authorization check.
  */
 export async function proxy(request: NextRequest) {
+  const csrf = csrfForRequest(request.cookies.get(CSRF_COOKIE)?.value);
+  request.cookies.set(CSRF_COOKIE, csrf);
+
   const env = getSupabaseEnv();
   if (!env) {
-    return NextResponse.next({ request });
+    return withCsrf(NextResponse.next({ request }), csrf);
   }
 
   let supabaseResponse = NextResponse.next({ request });
@@ -49,20 +53,21 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/login") || pathname.startsWith("/auth");
 
   if (!signedIn && !isPublic) {
-    return redirectWithSession(request, supabaseResponse, "/login");
+    return redirectWithSession(request, supabaseResponse, "/login", csrf);
   }
 
   if (signedIn && pathname.startsWith("/login")) {
-    return redirectWithSession(request, supabaseResponse, "/up-next");
+    return redirectWithSession(request, supabaseResponse, "/up-next", csrf);
   }
 
-  return supabaseResponse;
+  return withCsrf(supabaseResponse, csrf);
 }
 
 function redirectWithSession(
   request: NextRequest,
   supabaseResponse: NextResponse,
   pathname: string,
+  csrf: string,
 ) {
   const url = request.nextUrl.clone();
   url.pathname = pathname;
@@ -77,7 +82,18 @@ function redirectWithSession(
       redirectResponse.headers.set(header, value);
     }
   }
-  return redirectResponse;
+  return withCsrf(redirectResponse, csrf);
+}
+
+function withCsrf(response: NextResponse, csrf: string) {
+  response.cookies.set(CSRF_COOKIE, csrf, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+  });
+  return response;
 }
 
 export const config = {

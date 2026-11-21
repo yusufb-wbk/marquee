@@ -1,3 +1,4 @@
+import { CsrfField } from "@/components/csrf-field";
 import type { ShowStatus } from "@/lib/library/database";
 
 const OPTIONS: { status: ShowStatus; label: string }[] = [
@@ -17,6 +18,7 @@ export function ShowStatusForm({
 }) {
   return (
     <form action="/library/show" method="post" className="grid gap-3">
+      <CsrfField />
       <input type="hidden" name="tmdbId" value={showId} />
       <input type="hidden" name="next" value={nextPath} />
       <div className="flex flex-col gap-2 sm:flex-row">

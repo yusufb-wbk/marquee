@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 
+import { CsrfField } from "@/components/csrf-field";
 import { LibraryNotice } from "@/components/library-notice";
 import { Message } from "@/components/message";
 import { SchemaSetup } from "@/components/schema-setup";
@@ -156,6 +157,7 @@ function QueuedShow({
         meta={meta}
       />
       <form action="/library/episode" method="post">
+        <CsrfField />
         <input type="hidden" name="showId" value={show.tmdbId} />
         <input type="hidden" name="season" value={next.episode.seasonNumber} />
         <input type="hidden" name="episode" value={next.episode.episodeNumber} />

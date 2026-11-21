@@ -57,8 +57,8 @@ const alerts: Record<string, AuthAlert> = {
   },
   rejected: {
     tone: "error",
-    title: "That sign-in came from another site.",
-    body: "Use the form on this page.",
+    title: "Reload the page and try again.",
+    body: "That sign-in form was out of date.",
   },
   slow: {
     tone: "error",

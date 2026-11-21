@@ -8,7 +8,7 @@ const COPY: Record<Exclude<LibraryCode, "schema">, { title: string; body: string
   },
   rating: {
     title: "That rating is not allowed",
-    body: "Use 1 to 10 in half steps, or leave it blank.",
+    body: "Use 0.5 to 10 in half steps, or leave it blank.",
   },
   date: {
     title: "That watched date is not valid",
@@ -27,8 +27,8 @@ const COPY: Record<Exclude<LibraryCode, "schema">, { title: string; body: string
     body: "A rating or note is stored on a watched episode.",
   },
   rejected: {
-    title: "That request was blocked",
-    body: "Reload the page and try again from Marquee.",
+    title: "Reload the page and try again",
+    body: "That button was from an older copy of this page.",
   },
 };
 

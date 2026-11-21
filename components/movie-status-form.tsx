@@ -1,3 +1,4 @@
+import { CsrfField } from "@/components/csrf-field";
 import { RatingField } from "@/components/rating-field";
 import { isoDateUTC } from "@/lib/calendar";
 import type { MovieStatus } from "@/lib/library/database";
@@ -19,6 +20,7 @@ export function MovieStatusForm({
 
   return (
     <form action="/library/movie" method="post" className="grid gap-4">
+      <CsrfField />
       <input type="hidden" name="tmdbId" value={movieId} />
       <input type="hidden" name="next" value={nextPath} />
       <label className="grid gap-2 text-sm font-medium">

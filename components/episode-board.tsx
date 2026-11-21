@@ -1,3 +1,4 @@
+import { CsrfField } from "@/components/csrf-field";
 import { EpisodeActions } from "@/components/episode-actions";
 import { formatAirDate, formatRuntime } from "@/lib/format";
 import type { EpisodeWatch } from "@/lib/library/queries";
@@ -40,6 +41,7 @@ export function EpisodeBoard({
         </p>
         {episodes.length > 0 ? (
           <form action="/library/episode" method="post">
+            <CsrfField />
             <input type="hidden" name="showId" value={showId} />
             <input type="hidden" name="season" value={seasonNumber} />
             <input type="hidden" name="episode" value={episodes[0]?.episodeNumber ?? 1} />
@@ -85,6 +87,7 @@ export function EpisodeBoard({
                   : "No summary from TMDB."}
               </p>
               <form action="/library/episode" method="post" className="grid gap-3">
+                <CsrfField />
                 <input type="hidden" name="showId" value={showId} />
                 <input type="hidden" name="season" value={seasonNumber} />
                 <input type="hidden" name="episode" value={episode.episodeNumber} />

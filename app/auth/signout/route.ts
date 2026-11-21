@@ -1,11 +1,12 @@
 import { type NextRequest } from "next/server";
 
-import { requestIsSameOrigin } from "@/lib/same-origin";
+import { CSRF_COOKIE, csrfMatches } from "@/lib/csrf";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 import { redirectTo, supabaseForResponse } from "@/lib/supabase/route";
 
 export async function POST(request: NextRequest) {
-  if (!requestIsSameOrigin(request)) {
+  const formData = await request.formData();
+  if (!csrfMatches(request.cookies.get(CSRF_COOKIE)?.value, formData.get("csrf"))) {
     return redirectTo(request, "/up-next?library=rejected");
   }
 

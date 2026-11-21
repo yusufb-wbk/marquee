@@ -1,6 +1,9 @@
+import { CsrfField } from "@/components/csrf-field";
+
 export function LoginForm() {
   return (
     <form action="/auth/login" method="post" className="grid gap-4">
+      <CsrfField />
       <label className="grid gap-2 text-sm font-medium" htmlFor="email">
         Email
         <input
