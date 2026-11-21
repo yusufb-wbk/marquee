@@ -4,7 +4,7 @@ import Link from "next/link";
 import { readCsrfToken } from "@/components/csrf-field";
 import { LibraryNotice } from "@/components/library-notice";
 import { Message } from "@/components/message";
-import { QueuedShow } from "@/components/queued-show";
+import { UpNextQueue } from "@/components/up-next-queue";
 import { SchemaSetup } from "@/components/schema-setup";
 import { TitleLink } from "@/components/title-link";
 import { firstQueryValue } from "@/lib/format";
@@ -12,6 +12,7 @@ import type { ShowStatus } from "@/lib/library/database";
 import type { EpisodeWatch, TrackedMovie, TrackedShow } from "@/lib/library/queries";
 import { loadLibrary } from "@/lib/library/queries";
 import { lookupNextEpisode, watchedKeys } from "@/lib/library/up-next";
+import { showsWithANextEpisode } from "@/lib/queue";
 import { requireUser } from "@/lib/require-user";
 
 export const metadata = {
@@ -40,7 +41,7 @@ async function UpNextScreen({ searchParams }: PageProps) {
       <header className="grid gap-2">
         <h1 className="font-display text-4xl tracking-tight">Up next</h1>
         <p className="leading-7 text-muted">
-          One tap marks the next episode of a show you are watching.
+          One tap marks the next episode. A show leaves this list when its current season is finished and nothing new is listed yet.
         </p>
       </header>
       <LibraryNotice code={code} />
@@ -76,27 +77,19 @@ async function Queue({
     }),
   );
 
+  const waiting = showsWithANextEpisode(queued);
   return (
     <div className="grid gap-8">
-      {queued.length === 0 ? (
-        <p className="text-muted">
-          Nothing is queued. Search for a show and set it to Watching.
-        </p>
-      ) : (
-        <ul className="grid gap-3">
-          {queued.map((item) => (
-            <li key={item.show.tmdbId}>
-              <QueuedShow
-                csrf={csrf}
-                showId={item.show.tmdbId}
-                title={item.show.title}
-                posterUrl={item.show.posterUrl}
-                next={item.next}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
+      <UpNextQueue
+        csrf={csrf}
+        hadWatching={watching.length > 0}
+        items={waiting.map((item) => ({
+          showId: item.show.tmdbId,
+          title: item.show.title,
+          posterUrl: item.show.posterUrl,
+          next: item.next,
+        }))}
+      />
       <ShowGroup
         title="Watching"
         shows={library.shows.filter((show) => show.status === "watching")}

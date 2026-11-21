@@ -13,6 +13,7 @@ import { RatingField } from "@/components/rating-field";
 import type { ShowStatus } from "@/lib/library/database";
 import { libraryNotice } from "@/lib/library/notices";
 import { submitLibraryForm, submitterOf } from "@/lib/library/submit";
+import { parseRatingField } from "@/lib/rating";
 import { subscribeShowStatus } from "@/lib/show-status-bus";
 
 const OPTIONS: {
@@ -39,6 +40,8 @@ export function ShowStatusControls({
   nextPath: string;
 }) {
   const [status, setStatus] = useState(current);
+  const [committedRating, setCommittedRating] = useState(rating);
+  const [ratingVersion, setRatingVersion] = useState(0);
   const [pending, setPending] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -52,6 +55,7 @@ export function ShowStatusControls({
     }
     const submitter = submitterOf(event);
     const value = submitter?.value ?? "";
+    const ratingField = new FormData(event.currentTarget).get("rating");
     setPending(submitter?.dataset.action ?? value);
     setSaved(false);
     setNotice(null);
@@ -59,7 +63,12 @@ export function ShowStatusControls({
     setPending(null);
     if (!result.ok) {
       setNotice(libraryNotice(result.error)?.title ?? "That change was not saved");
+      setRatingVersion((version) => version + 1);
       return;
+    }
+    const parsed = parseRatingField(ratingField);
+    if (parsed.ok) {
+      setCommittedRating(parsed.rating);
     }
     if (value === "remove") {
       setStatus(null);
@@ -74,19 +83,17 @@ export function ShowStatusControls({
       <input type="hidden" name="csrf" value={csrf} />
       <input type="hidden" name="tmdbId" value={showId} />
       <input type="hidden" name="next" value={nextPath} />
-      <RatingField stored={rating} />
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          name="status"
-          value={status ?? "watching"}
-          data-action="rating"
-          disabled={pending !== null}
-          className="inline-flex h-11 items-center justify-center rounded-full border border-line px-4 text-sm font-semibold disabled:opacity-60"
-        >
-          {pending === "rating" ? "Saving…" : "Save rating"}
-        </button>
-      </div>
+      <RatingField
+        key={`${ratingVersion}:${committedRating ?? "none"}`}
+        stored={committedRating}
+        submit={{
+          name: "status",
+          value: status ?? "watching",
+          action: "rating",
+          pending: pending !== null,
+          persistRemove: status !== null,
+        }}
+      />
       <div className="grid grid-cols-3 gap-2">
         {OPTIONS.map((option) => {
           const selected = status === option.status;

@@ -59,12 +59,14 @@ export function QueuedShow({
   title,
   posterUrl,
   next,
+  onCaughtUp,
 }: {
   csrf: string;
   showId: number;
   title: string;
   posterUrl: string | null;
   next: NextCard;
+  onCaughtUp: () => void;
 }) {
   const [current, setCurrent] = useState(next);
   const [pending, setPending] = useState(false);
@@ -83,7 +85,12 @@ export function QueuedShow({
       setNotice(libraryNotice(result.error)?.title ?? "That change was not saved");
       return;
     }
-    setCurrent(readNext(result.data) ?? { state: "caught_up" });
+    const following = readNext(result.data) ?? { state: "caught_up" };
+    if (following.state === "caught_up") {
+      onCaughtUp();
+      return;
+    }
+    setCurrent(following);
   }
 
   if (current.state === "error") {
@@ -101,14 +108,7 @@ export function QueuedShow({
   }
 
   if (current.state === "caught_up") {
-    return (
-      <TitleLink
-        href={`/tv/${showId}`}
-        title={title}
-        posterUrl={posterUrl}
-        meta="You are caught up"
-      />
-    );
+    return null;
   }
 
   const aired = formatAirDate(current.episode.airDate);

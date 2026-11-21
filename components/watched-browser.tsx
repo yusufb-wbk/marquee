@@ -3,9 +3,9 @@
 import { useMemo, useState } from "react";
 
 import { Poster } from "@/components/poster";
+import { WatchedRating } from "@/components/watched-rating";
 import {
   filterWatched,
-  watchedRatingLabel,
   type WatchedQuery,
   type WatchedTitle,
 } from "@/lib/watched";
@@ -20,19 +20,26 @@ const INITIAL: WatchedQuery = {
   text: "",
 };
 
-export function WatchedBrowser({ titles }: { titles: WatchedTitle[] }) {
+export function WatchedBrowser({
+  titles,
+  csrf,
+}: {
+  titles: WatchedTitle[];
+  csrf: string;
+}) {
+  const [catalog, setCatalog] = useState(titles);
   const [query, setQuery] = useState(INITIAL);
   const genres = useMemo(() => {
-    const names = new Set(titles.flatMap((title) => title.genres));
+    const names = new Set(catalog.flatMap((title) => title.genres));
     return [...names].sort((left, right) => left.localeCompare(right));
-  }, [titles]);
+  }, [catalog]);
   const years = useMemo(() => {
     const values = new Set(
-      titles.flatMap((title) => (title.year ? [title.year] : [])),
+      catalog.flatMap((title) => (title.year ? [title.year] : [])),
     );
     return [...values].sort((left, right) => right.localeCompare(left));
-  }, [titles]);
-  const visible = useMemo(() => filterWatched(titles, query), [titles, query]);
+  }, [catalog]);
+  const visible = useMemo(() => filterWatched(catalog, query), [catalog, query]);
 
   function update(patch: Partial<WatchedQuery>) {
     setQuery((current) => ({ ...current, ...patch }));
@@ -166,7 +173,7 @@ export function WatchedBrowser({ titles }: { titles: WatchedTitle[] }) {
       </label>
       <div className="flex items-center gap-3">
         <p className="text-sm text-muted">
-          {visible.length} of {titles.length}
+          {visible.length} of {catalog.length}
         </p>
         <button
           type="button"
@@ -178,7 +185,7 @@ export function WatchedBrowser({ titles }: { titles: WatchedTitle[] }) {
           Clear filters
         </button>
       </div>
-      {titles.length === 0 ? (
+      {catalog.length === 0 ? (
         <p className="text-muted">
           Nothing you have watched is here yet. Mark a movie or an episode, or
           import an IMDb export.
@@ -188,24 +195,44 @@ export function WatchedBrowser({ titles }: { titles: WatchedTitle[] }) {
       ) : (
         <ul className="grid gap-3">
           {visible.map((title) => (
-            <li key={`${title.kind}-${title.id}`}>
+            <li
+              key={`${title.kind}-${title.id}`}
+              className="flex gap-3 rounded-2xl border border-line bg-card p-3"
+            >
               <Link
                 href={title.kind === "tv" ? `/tv/${title.id}` : `/movie/${title.id}`}
-                className="flex gap-3 rounded-2xl border border-line bg-card p-3"
+                className="shrink-0"
               >
                 <Poster src={title.posterUrl} title={title.title} />
-                <span className="grid min-w-0 gap-1">
+              </Link>
+              <div className="grid min-w-0 gap-2">
+                <Link
+                  href={title.kind === "tv" ? `/tv/${title.id}` : `/movie/${title.id}`}
+                  className="grid gap-1"
+                >
                   <span className="font-display text-xl leading-tight">{title.title}</span>
                   <span className="text-sm text-muted">
                     {[title.year, title.detail, ...title.genres.slice(0, 3)]
                       .filter((part): part is string => Boolean(part))
                       .join(" · ")}
                   </span>
-                  <span className="text-sm text-accent">
-                    {watchedRatingLabel(title.rating)}
-                  </span>
-                </span>
-              </Link>
+                </Link>
+                <WatchedRating
+                  csrf={csrf}
+                  kind={title.kind}
+                  id={title.id}
+                  stored={title.rating}
+                  onRated={(rating) => {
+                    setCatalog((current) =>
+                      current.map((item) =>
+                        item.kind === title.kind && item.id === title.id
+                          ? { ...item, rating }
+                          : item,
+                      ),
+                    );
+                  }}
+                />
+              </div>
             </li>
           ))}
         </ul>

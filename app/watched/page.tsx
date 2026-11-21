@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 
+import { readCsrfToken } from "@/components/csrf-field";
 import { LibraryNotice } from "@/components/library-notice";
 import { Message } from "@/components/message";
 import { SchemaSetup } from "@/components/schema-setup";
@@ -51,6 +52,7 @@ async function WatchedScreen({ searchParams }: PageProps) {
       ) : null}
       {library.ok ? (
         <WatchedBrowser
+          csrf={await readCsrfToken()}
           titles={buildWatchedTitles({
             shows: library.data.shows,
             movies: library.data.movies,

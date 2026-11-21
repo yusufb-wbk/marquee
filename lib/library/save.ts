@@ -56,6 +56,39 @@ function savedOr(error: { code?: string; message: string } | null): Saved {
   return { ok: false, error: libraryFailure(error) };
 }
 
+export async function saveTrackedRating(
+  userId: string,
+  kind: string,
+  tmdbId: number,
+  ratingRaw: FormDataEntryValue | null,
+): Promise<Saved> {
+  if (kind !== "tv" && kind !== "movie") {
+    return { ok: false, error: "save" };
+  }
+  const rating = parseRatingField(ratingRaw);
+  if (!rating.ok) {
+    return { ok: false, error: "rating" };
+  }
+  const supabase = await createClient();
+  const table = kind === "tv" ? "tracked_shows" : "tracked_movies";
+  const written = await supabase
+    .from(table)
+    .update({
+      rating: rating.rating,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", userId)
+    .eq("tmdb_id", tmdbId)
+    .select("tmdb_id");
+  if (written.error) {
+    return savedOr(written.error);
+  }
+  if (written.data.length === 0) {
+    return { ok: false, error: "missing" };
+  }
+  return { ok: true, data: true };
+}
+
 export async function saveShowStatus(
   userId: string,
   tmdbId: number,
