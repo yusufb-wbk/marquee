@@ -1,7 +1,7 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { BackButton } from "@/components/back-button";
 import { LibraryNotice } from "@/components/library-notice";
 import { Message } from "@/components/message";
 import { MovieStatusForm } from "@/components/movie-status-form";
@@ -57,9 +57,7 @@ async function MovieScreen({ params, searchParams }: MoviePageProps) {
 
   return (
     <div className="grid gap-6">
-      <Link href="/up-next" className="text-sm text-muted">
-        Back to up next
-      </Link>
+      <BackButton />
       <LibraryNotice code={libraryCode} />
       {!progress.ok && progress.error === "schema" ? <SchemaSetup /> : null}
       {!progress.ok && progress.error !== "schema" ? (
@@ -83,22 +81,36 @@ async function MovieScreen({ params, searchParams }: MoviePageProps) {
 
 function MovieHeader({ movie }: { movie: Movie }) {
   const runtime = formatRuntime(movie.runtime);
-  const facts = [movie.year, runtime, movie.status, ...movie.genres].filter(
+  const details = [movie.year, runtime, movie.status].filter(
     (fact): fact is string => Boolean(fact),
   );
 
   return (
-    <div className="flex flex-col gap-5 md:flex-row">
-      <Poster src={movie.posterUrl} title={movie.title} size="large" />
-      <div className="grid gap-3">
+    <div className="flex items-start gap-4">
+      <div className="shrink-0">
+        <Poster src={movie.posterUrl} title={movie.title} size="large" />
+      </div>
+      <div className="grid min-w-0 flex-1 gap-2">
         <p className="text-xs uppercase tracking-wide text-muted">Movie</p>
-        <h1 className="font-display text-4xl tracking-tight">{movie.title}</h1>
-        {facts.length > 0 ? (
-          <p className="text-sm text-muted">{facts.join(" · ")}</p>
+        <h1 className="font-display text-3xl tracking-tight sm:text-4xl">{movie.title}</h1>
+        {details.length > 0 ? (
+          <p className="text-sm text-muted">{details.join(" · ")}</p>
+        ) : null}
+        {movie.genres.length > 0 ? (
+          <ul className="flex flex-wrap gap-2">
+            {movie.genres.map((genre) => (
+              <li
+                key={genre}
+                className="rounded-full border border-line px-2 py-1 text-xs text-muted"
+              >
+                {genre}
+              </li>
+            ))}
+          </ul>
         ) : null}
         <CollapsibleText
           text={titleOverview(movie.overview)}
-          className="leading-7 text-muted"
+          className="text-sm leading-6 text-muted"
         />
       </div>
     </div>

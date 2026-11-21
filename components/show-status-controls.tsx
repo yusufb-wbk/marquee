@@ -75,17 +75,19 @@ export function ShowStatusControls({
       <input type="hidden" name="tmdbId" value={showId} />
       <input type="hidden" name="next" value={nextPath} />
       <RatingField stored={rating} />
-      <button
-        type="submit"
-        name="status"
-        value={status ?? "watching"}
-        data-action="rating"
-        disabled={pending !== null}
-        className="inline-flex h-12 items-center justify-center rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-60"
-      >
-        {pending === "rating" ? "Saving…" : "Save rating"}
-      </button>
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="flex justify-end">
+        <button
+          type="submit"
+          name="status"
+          value={status ?? "watching"}
+          data-action="rating"
+          disabled={pending !== null}
+          className="inline-flex h-11 items-center justify-center rounded-full border border-line px-4 text-sm font-semibold disabled:opacity-60"
+        >
+          {pending === "rating" ? "Saving…" : "Save rating"}
+        </button>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
         {OPTIONS.map((option) => {
           const selected = status === option.status;
           return (
@@ -98,18 +100,12 @@ export function ShowStatusControls({
               disabled={pending !== null}
               className={
                 selected
-                  ? "inline-flex h-12 flex-1 items-center justify-center rounded-xl bg-accent px-4 text-sm font-semibold text-accent-ink disabled:opacity-60"
-                  : "inline-flex h-12 flex-1 items-center justify-center rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-60"
+                  ? "grid min-h-16 content-center justify-items-center gap-1 rounded-2xl bg-accent px-2 py-2 text-xs font-semibold text-accent-ink disabled:opacity-60"
+                  : "grid min-h-16 content-center justify-items-center gap-1 rounded-2xl border border-line px-2 py-2 text-xs font-semibold disabled:opacity-60"
               }
             >
-              <span className="inline-flex items-center gap-2">
-                {selected ? (
-                  <CheckIcon className="h-5 w-5" />
-                ) : (
-                  <option.Icon className="h-5 w-5" />
-                )}
-                {pending === option.status ? "Saving…" : option.label}
-              </span>
+              {selected ? <CheckIcon className="h-5 w-5" /> : <option.Icon className="h-5 w-5" />}
+              {pending === option.status ? "Saving…" : option.label}
             </button>
           );
         })}
@@ -120,9 +116,9 @@ export function ShowStatusControls({
           name="status"
           value="remove"
           disabled={pending !== null}
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-60"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl text-sm font-medium text-muted disabled:opacity-60"
         >
-          <CloseIcon className="h-5 w-5" />
+          <CloseIcon className="h-4 w-4" />
           {pending === "remove" ? "Saving…" : "Remove from my list"}
         </button>
       ) : null}

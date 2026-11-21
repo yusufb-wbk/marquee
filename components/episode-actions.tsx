@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type PointerEvent } from "react";
+import { useRef, useState, type MouseEvent, type PointerEvent } from "react";
 
 import {
   CheckIcon,
@@ -65,10 +65,12 @@ function WatchedRow({ pending }: { pending: WatchIntent | null }) {
   const [open, setOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
   const gesture = useRef({ x: 0, y: 0, base: PEEK, tracking: false, reveal: PEEK });
+  const dragged = useRef(false);
   const busy = pending !== null;
   const shown = dragging ? reveal : open ? OPEN : PEEK;
 
   function onPointerDown(event: PointerEvent<HTMLDivElement>) {
+    dragged.current = false;
     if (busy || event.pointerType === "mouse") {
       return;
     }
@@ -108,6 +110,7 @@ function WatchedRow({ pending }: { pending: WatchIntent | null }) {
       return;
     }
     const nextOpen = gesture.current.reveal > OPEN / 2;
+    dragged.current = true;
     gesture.current.tracking = false;
     setDragging(false);
     setOpen(nextOpen);
@@ -137,7 +140,20 @@ function WatchedRow({ pending }: { pending: WatchIntent | null }) {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
-        <div className="flex h-12 min-w-0 flex-1 items-center justify-between gap-3 rounded-xl bg-notice-bg px-3 text-notice">
+        <button
+          type="submit"
+          name="intent"
+          value="unwatch"
+          disabled={busy}
+          onClick={(event: MouseEvent<HTMLButtonElement>) => {
+            if (!dragged.current) {
+              return;
+            }
+            event.preventDefault();
+            dragged.current = false;
+          }}
+          className="flex h-12 min-w-0 flex-1 items-center justify-between gap-3 rounded-xl bg-notice-bg px-3 text-left text-notice disabled:opacity-60"
+        >
           <span className="flex items-center gap-3">
             <CheckIcon className="h-7 w-7" />
             <span className="text-base font-semibold">
@@ -146,9 +162,9 @@ function WatchedRow({ pending }: { pending: WatchIntent | null }) {
           </span>
           <span className="sm:hidden">
             <ChevronLeftIcon className="h-5 w-5" />
-            <span className="sr-only">Swipe left to mark this episode not watched.</span>
+            <span className="sr-only">Tap to mark not watched, or swipe left.</span>
           </span>
-        </div>
+        </button>
         <button
           type="submit"
           name="intent"

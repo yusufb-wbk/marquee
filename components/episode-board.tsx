@@ -103,17 +103,20 @@ export function EpisodeBoard({
 
   return (
     <section className="grid gap-4">
-      <div className="grid gap-2">
-        <h2 className="font-display text-2xl">{seasonName}</h2>
-        <p className="text-sm text-muted">
-          {complete
-            ? "Season complete"
-            : `${watchedCount} of ${episodes.length} watched`}
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="grid gap-1">
+          <h2 className="font-display text-2xl">{seasonName}</h2>
+          <p className="text-sm text-muted">
+            {complete
+              ? "Season complete"
+              : `${watchedCount} of ${episodes.length} watched`}
+          </p>
+        </div>
         {episodes.length > 0 ? (
           <form
             action="/library/episode"
             method="post"
+            className="w-full sm:w-auto"
             onSubmit={(event) => {
               void onSubmit(event, "season");
             }}
@@ -127,10 +130,14 @@ export function EpisodeBoard({
               type="submit"
               name="intent"
               value="season"
-              disabled={pendingKey !== null}
-              className="inline-flex h-12 items-center justify-center rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-60"
+              disabled={pendingKey !== null || complete}
+              className="inline-flex h-11 w-full items-center justify-center rounded-full border border-line px-4 text-sm font-semibold disabled:opacity-60 sm:w-auto"
             >
-              {pendingKey === "season" ? "Saving…" : "Mark season watched"}
+              {pendingKey === "season"
+                ? "Saving…"
+                : complete
+                  ? "Season watched"
+                  : "Mark season watched"}
             </button>
           </form>
         ) : (

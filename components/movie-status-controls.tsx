@@ -69,7 +69,7 @@ export function MovieStatusControls({
         />
       </label>
       <RatingField stored={rating} />
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="grid grid-cols-2 gap-2">
         <button
           type="submit"
           name="status"
@@ -78,8 +78,8 @@ export function MovieStatusControls({
           disabled={pending !== null}
           className={
             current === "watchlist"
-              ? "inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-accent-ink disabled:opacity-60"
-              : "inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-60"
+              ? "grid min-h-16 content-center justify-items-center gap-1 rounded-2xl bg-accent px-2 py-2 text-xs font-semibold text-accent-ink disabled:opacity-60"
+              : "grid min-h-16 content-center justify-items-center gap-1 rounded-2xl border border-line px-2 py-2 text-xs font-semibold disabled:opacity-60"
           }
         >
           {current === "watchlist" ? (
@@ -97,8 +97,8 @@ export function MovieStatusControls({
           disabled={pending !== null}
           className={
             current === "watched"
-              ? "inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-accent-ink disabled:opacity-60"
-              : "inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-60"
+              ? "grid min-h-16 content-center justify-items-center gap-1 rounded-2xl bg-accent px-2 py-2 text-xs font-semibold text-accent-ink disabled:opacity-60"
+              : "grid min-h-16 content-center justify-items-center gap-1 rounded-2xl border border-line px-2 py-2 text-xs font-semibold disabled:opacity-60"
           }
         >
           <CheckIcon className="h-5 w-5" />
@@ -111,9 +111,9 @@ export function MovieStatusControls({
           name="status"
           value="remove"
           disabled={pending !== null}
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-60"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl text-sm font-medium text-muted disabled:opacity-60"
         >
-          <CloseIcon className="h-5 w-5" />
+          <CloseIcon className="h-4 w-4" />
           {pending === "remove" ? "Saving…" : "Remove from my list"}
         </button>
       ) : null}
