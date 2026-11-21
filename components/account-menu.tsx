@@ -1,4 +1,5 @@
-import { CsrfField } from "@/components/csrf-field";
+import { readCsrfToken } from "@/components/csrf-field";
+import { ProfileMenu } from "@/components/profile-menu";
 import { getAuthStatus } from "@/lib/auth";
 
 export async function AccountMenu() {
@@ -7,22 +8,6 @@ export async function AccountMenu() {
     return null;
   }
 
-  const label = status.user.email ?? "Signed in";
-
-  return (
-    <div className="flex items-center gap-3">
-      <p className="max-w-40 truncate text-sm text-muted" title={label}>
-        {label}
-      </p>
-      <form action="/auth/signout" method="post">
-        <CsrfField />
-        <button
-          type="submit"
-          className="inline-flex h-11 items-center justify-center rounded-xl border border-line px-4 text-sm font-medium"
-        >
-          Sign out
-        </button>
-      </form>
-    </div>
-  );
+  const csrf = await readCsrfToken();
+  return <ProfileMenu email={status.user.email ?? "Signed in"} csrf={csrf} />;
 }

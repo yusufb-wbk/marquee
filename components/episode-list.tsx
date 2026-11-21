@@ -1,18 +1,22 @@
+import { CollapsibleText } from "@/components/collapsible-text";
+import { isoDateUTC } from "@/lib/calendar";
 import { formatAirDate, formatRuntime } from "@/lib/format";
+import { episodeOverview } from "@/lib/overview";
 import type { Episode } from "@/lib/tmdb/types";
 
 export function EpisodeList({ episodes }: { episodes: Episode[] }) {
   if (episodes.length === 0) {
-    return (
-      <p className="text-muted">This season has no episodes listed yet.</p>
-    );
+    return <p className="text-muted">This season has no episodes listed yet.</p>;
   }
+
+  const today = isoDateUTC(new Date());
 
   return (
     <ol className="grid">
       {episodes.map((episode) => {
         const aired = formatAirDate(episode.airDate);
         const runtime = formatRuntime(episode.runtime);
+        const summary = episodeOverview(episode.overview, episode.airDate, today);
         return (
           <li
             key={episode.id}
@@ -24,15 +28,13 @@ export function EpisodeList({ episodes }: { episodes: Episode[] }) {
               </span>
               <h3 className="text-base font-semibold">{episode.name}</h3>
               {aired ? <span className="text-sm text-muted">{aired}</span> : null}
-              {runtime ? (
-                <span className="text-sm text-muted">{runtime}</span>
-              ) : null}
+              {runtime ? <span className="text-sm text-muted">{runtime}</span> : null}
             </div>
-            <p className="text-sm leading-6 text-muted">
-              {episode.overview.length > 0
-                ? episode.overview
-                : "No summary from TMDB."}
-            </p>
+            {episode.overview.trim().length > 0 ? (
+              <CollapsibleText text={summary} className="text-sm leading-6 text-muted" />
+            ) : (
+              <p className="text-sm leading-6 text-muted">{summary}</p>
+            )}
           </li>
         );
       })}

@@ -2,6 +2,8 @@
 
 import { useSyncExternalStore } from "react";
 
+import { MoonIcon, SunIcon } from "@/components/icons";
+
 type ThemeName = "dark" | "light";
 
 const listeners = new Set<() => void>();
@@ -39,9 +41,10 @@ export function ThemeToggle() {
       onClick={() => {
         publish(next);
       }}
-      className="inline-flex h-11 items-center justify-center rounded-xl border border-line px-3 text-sm font-medium"
+      aria-label={next === "light" ? "Switch to light theme" : "Switch to dark theme"}
+      className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-line"
     >
-      {next === "light" ? "Light" : "Dark"}
+      {next === "light" ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
     </button>
   );
 }

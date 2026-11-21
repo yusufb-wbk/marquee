@@ -5,9 +5,11 @@ import { notFound } from "next/navigation";
 import { LibraryNotice } from "@/components/library-notice";
 import { Message } from "@/components/message";
 import { MovieStatusForm } from "@/components/movie-status-form";
+import { CollapsibleText } from "@/components/collapsible-text";
 import { Poster } from "@/components/poster";
 import { SchemaSetup } from "@/components/schema-setup";
 import { firstQueryValue, formatRuntime, parsePositiveInt } from "@/lib/format";
+import { titleOverview } from "@/lib/overview";
 import { loadMovieProgress } from "@/lib/library/queries";
 import { requireUser } from "@/lib/require-user";
 import { getMovie } from "@/lib/tmdb/client";
@@ -94,11 +96,10 @@ function MovieHeader({ movie }: { movie: Movie }) {
         {facts.length > 0 ? (
           <p className="text-sm text-muted">{facts.join(" · ")}</p>
         ) : null}
-        <p className="leading-7 text-muted">
-          {movie.overview.length > 0
-            ? movie.overview
-            : "No summary from TMDB."}
-        </p>
+        <CollapsibleText
+          text={titleOverview(movie.overview)}
+          className="leading-7 text-muted"
+        />
       </div>
     </div>
   );

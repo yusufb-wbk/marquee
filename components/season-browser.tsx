@@ -68,6 +68,7 @@ export function SeasonBrowser({
   initialEpisodes,
   initialWatched,
   showTracked,
+  today,
 }: {
   csrf: string;
   showId: number;
@@ -77,6 +78,7 @@ export function SeasonBrowser({
   initialEpisodes: Episode[];
   initialWatched: WatchRef[];
   showTracked: boolean;
+  today: string;
 }) {
   const [seasonNumber, setSeasonNumber] = useState(initialSeasonNumber);
   const [seasonName, setSeasonName] = useState(initialSeasonName);
@@ -160,6 +162,7 @@ export function SeasonBrowser({
         watchedKeys={watched}
         showTracked={tracked}
         nextPath={nextPath}
+        today={today}
         onWatched={setWatched}
         onTracked={() => {
           setTracked(true);

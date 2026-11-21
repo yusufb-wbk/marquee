@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Poster } from "@/components/poster";
+import { titleOverview } from "@/lib/overview";
 import type { SearchTitle } from "@/lib/tmdb/types";
 
 export function ResultList({ titles }: { titles: SearchTitle[] }) {
@@ -40,9 +41,7 @@ export function ResultList({ titles }: { titles: SearchTitle[] }) {
                   </span>
                 </span>
                 <span className="line-clamp-3 text-sm leading-6 text-muted">
-                  {title.overview.length > 0
-                    ? title.overview
-                    : "No summary from TMDB."}
+                  {titleOverview(title.overview)}
                 </span>
               </span>
             </Link>

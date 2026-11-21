@@ -2,8 +2,10 @@
 
 import { useState, type FormEvent } from "react";
 
+import { CollapsibleText } from "@/components/collapsible-text";
 import { EpisodeActions } from "@/components/episode-actions";
 import { formatAirDate, formatRuntime } from "@/lib/format";
+import { episodeOverview } from "@/lib/overview";
 import { libraryNotice } from "@/lib/library/notices";
 import { submitLibraryForm, submitterOf } from "@/lib/library/submit";
 import {
@@ -33,6 +35,7 @@ export function EpisodeBoard({
   watchedKeys,
   showTracked,
   nextPath,
+  today,
   onWatched,
   onTracked,
 }: {
@@ -44,6 +47,7 @@ export function EpisodeBoard({
   watchedKeys: ReadonlySet<string>;
   showTracked: boolean;
   nextPath: string;
+  today: string;
   onWatched: (watched: Set<string>) => void;
   onTracked: () => void;
 }) {
@@ -156,11 +160,16 @@ export function EpisodeBoard({
                 {aired ? <span className="text-sm text-muted">{aired}</span> : null}
                 {runtime ? <span className="text-sm text-muted">{runtime}</span> : null}
               </div>
-              <p className="text-sm leading-6 text-muted">
-                {episode.overview.length > 0
-                  ? episode.overview
-                  : "No summary from TMDB."}
-              </p>
+              {episode.overview.trim().length > 0 ? (
+                <CollapsibleText
+                  text={episode.overview}
+                  className="text-sm leading-6 text-muted"
+                />
+              ) : (
+                <p className="text-sm leading-6 text-muted">
+                  {episodeOverview("", episode.airDate, today)}
+                </p>
+              )}
               <form
                 action="/library/episode"
                 method="post"

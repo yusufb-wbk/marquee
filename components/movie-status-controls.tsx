@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 
+import { BookmarkIcon, CheckIcon, CloseIcon } from "@/components/icons";
 import { RatingField } from "@/components/rating-field";
 import type { MovieStatus } from "@/lib/library/database";
 import { libraryNotice } from "@/lib/library/notices";
@@ -77,11 +78,16 @@ export function MovieStatusControls({
           disabled={pending !== null}
           className={
             current === "watchlist"
-              ? "inline-flex h-12 flex-1 items-center justify-center rounded-xl bg-accent px-4 text-sm font-semibold text-accent-ink disabled:opacity-60"
-              : "inline-flex h-12 flex-1 items-center justify-center rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-60"
+              ? "inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-accent-ink disabled:opacity-60"
+              : "inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-60"
           }
         >
-          Watchlist
+          {current === "watchlist" ? (
+            <CheckIcon className="h-5 w-5" />
+          ) : (
+            <BookmarkIcon className="h-5 w-5" />
+          )}
+          {pending === "watchlist" ? "Saving…" : "Watchlist"}
         </button>
         <button
           type="submit"
@@ -91,10 +97,11 @@ export function MovieStatusControls({
           disabled={pending !== null}
           className={
             current === "watched"
-              ? "inline-flex h-12 flex-1 items-center justify-center rounded-xl bg-accent px-4 text-sm font-semibold text-accent-ink disabled:opacity-60"
-              : "inline-flex h-12 flex-1 items-center justify-center rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-60"
+              ? "inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-accent-ink disabled:opacity-60"
+              : "inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-60"
           }
         >
+          <CheckIcon className="h-5 w-5" />
           {pending === "watched" ? "Saving…" : "Watched"}
         </button>
       </div>
@@ -104,9 +111,10 @@ export function MovieStatusControls({
           name="status"
           value="remove"
           disabled={pending !== null}
-          className="inline-flex h-12 items-center justify-center rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-60"
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-60"
         >
-          Remove from my list
+          <CloseIcon className="h-5 w-5" />
+          {pending === "remove" ? "Saving…" : "Remove from my list"}
         </button>
       ) : null}
       {notice ? (

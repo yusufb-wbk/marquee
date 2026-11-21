@@ -2,16 +2,27 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 
+import {
+  BookmarkIcon,
+  CheckIcon,
+  CloseIcon,
+  EyeIcon,
+  PauseIcon,
+} from "@/components/icons";
 import { RatingField } from "@/components/rating-field";
 import type { ShowStatus } from "@/lib/library/database";
 import { libraryNotice } from "@/lib/library/notices";
 import { submitLibraryForm, submitterOf } from "@/lib/library/submit";
 import { subscribeShowStatus } from "@/lib/show-status-bus";
 
-const OPTIONS: { status: ShowStatus; label: string }[] = [
-  { status: "watching", label: "Watching" },
-  { status: "watchlist", label: "Watchlist" },
-  { status: "stopped", label: "Stopped" },
+const OPTIONS: {
+  status: ShowStatus;
+  label: string;
+  Icon: typeof EyeIcon;
+}[] = [
+  { status: "watching", label: "Watching", Icon: EyeIcon },
+  { status: "watchlist", label: "Watchlist", Icon: BookmarkIcon },
+  { status: "stopped", label: "Stopped", Icon: PauseIcon },
 ];
 
 export function ShowStatusControls({
@@ -91,7 +102,14 @@ export function ShowStatusControls({
                   : "inline-flex h-12 flex-1 items-center justify-center rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-60"
               }
             >
-              {option.label}
+              <span className="inline-flex items-center gap-2">
+                {selected ? (
+                  <CheckIcon className="h-5 w-5" />
+                ) : (
+                  <option.Icon className="h-5 w-5" />
+                )}
+                {pending === option.status ? "Saving…" : option.label}
+              </span>
             </button>
           );
         })}
@@ -102,9 +120,10 @@ export function ShowStatusControls({
           name="status"
           value="remove"
           disabled={pending !== null}
-          className="inline-flex h-12 items-center justify-center rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-60"
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-60"
         >
-          Remove from my list
+          <CloseIcon className="h-5 w-5" />
+          {pending === "remove" ? "Saving…" : "Remove from my list"}
         </button>
       ) : null}
       {notice ? (

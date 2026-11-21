@@ -6,16 +6,19 @@ import { readCsrfToken } from "@/components/csrf-field";
 import { EpisodeList } from "@/components/episode-list";
 import { LibraryNotice } from "@/components/library-notice";
 import { Message } from "@/components/message";
+import { CollapsibleText } from "@/components/collapsible-text";
 import { Poster } from "@/components/poster";
 import { SchemaSetup } from "@/components/schema-setup";
 import { SeasonBrowser } from "@/components/season-browser";
 import { SeasonNav } from "@/components/season-nav";
 import { ShowStatusForm } from "@/components/show-status-form";
+import { isoDateUTC } from "@/lib/calendar";
 import {
   firstQueryValue,
   parsePositiveInt,
   parseSeasonNumber,
 } from "@/lib/format";
+import { titleOverview } from "@/lib/overview";
 import { loadShowProgress, type EpisodeWatch } from "@/lib/library/queries";
 import { requireUser } from "@/lib/require-user";
 import { getTvSeason, getTvShow } from "@/lib/tmdb/client";
@@ -155,9 +158,10 @@ function ShowHeader({ show }: { show: TvShow }) {
         {facts.length > 0 ? (
           <p className="text-sm text-muted">{facts.join(" · ")}</p>
         ) : null}
-        <p className="leading-7 text-muted">
-          {show.overview.length > 0 ? show.overview : "No summary from TMDB."}
-        </p>
+        <CollapsibleText
+          text={titleOverview(show.overview)}
+          className="leading-7 text-muted"
+        />
       </div>
     </div>
   );
@@ -203,6 +207,7 @@ async function TrackedSeason({
       initialEpisodes={result.data.episodes}
       initialWatched={watches}
       showTracked={showTracked}
+      today={isoDateUTC(new Date())}
     />
   );
 }
