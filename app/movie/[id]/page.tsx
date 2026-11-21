@@ -72,7 +72,6 @@ async function MovieScreen({ params, searchParams }: MoviePageProps) {
           status={tracked?.status ?? null}
           watchedOn={tracked?.watchedOn ?? null}
           rating={tracked?.rating ?? null}
-          note={tracked?.note ?? null}
           nextPath={`/movie/${result.data.id}`}
         />
       ) : null}

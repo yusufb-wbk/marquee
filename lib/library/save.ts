@@ -168,7 +168,7 @@ export async function saveMovieStatus(
       runtime_minutes: movie.runtime,
       watched_on: watchedOn,
       rating: rating.rating,
-      note: note.note,
+      ...(typeof noteRaw === "string" ? { note: note.note } : {}),
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id,tmdb_id" },

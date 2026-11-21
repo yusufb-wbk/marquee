@@ -7,14 +7,12 @@ export function MovieStatusForm({
   status,
   watchedOn,
   rating,
-  note,
   nextPath,
 }: {
   movieId: number;
   status: MovieStatus | null;
   watchedOn: string | null;
   rating: number | null;
-  note: string | null;
   nextPath: string;
 }) {
   const today = isoDateUTC(new Date());
@@ -33,16 +31,6 @@ export function MovieStatusForm({
         />
       </label>
       <RatingField stored={rating} />
-      <label className="grid gap-2 text-sm font-medium">
-        Note
-        <textarea
-          name="note"
-          defaultValue={note ?? ""}
-          maxLength={500}
-          rows={3}
-          className="rounded-xl border border-line bg-background px-3 py-2 text-base font-normal text-foreground"
-        />
-      </label>
       <div className="flex flex-col gap-2 sm:flex-row">
         <button
           type="submit"

@@ -4,6 +4,8 @@ import { cacheLife } from "next/cache";
 import { connection } from "next/server";
 
 import { readEnv } from "@/lib/env";
+import { consumeRateLimit } from "@/lib/rate-limit";
+import { normalizeSearchQuery } from "@/lib/search-query";
 import {
   parseMovie,
   parseSearchResults,
@@ -21,6 +23,11 @@ import {
   type TvSeason,
   type TvShow,
 } from "@/lib/tmdb/types";
+
+const UPSTREAM_PER_MINUTE = { limit: 80, windowMs: 60 * 1000 };
+const UPSTREAM_PER_HOUR = { limit: 400, windowMs: 60 * 60 * 1000 };
+const SEARCH_PER_USER = { limit: 60, windowMs: 10 * 60 * 1000 };
+const SEARCH_GLOBAL = { limit: 120, windowMs: 10 * 60 * 1000 };
 
 const MESSAGES: Record<TmdbErrorKind, string> = {
   missing_key:
@@ -56,6 +63,26 @@ function getTmdbCredentials(): TmdbCredentials | null {
 
 function failure(kind: TmdbErrorKind, message?: string): TmdbError {
   return { kind, message: message ?? MESSAGES[kind] };
+}
+
+function gateTmdb(): TmdbError | null {
+  if (!hasTmdbCredentials()) {
+    return failure("missing_key");
+  }
+  return upstreamPause();
+}
+
+function upstreamPause(): TmdbError | null {
+  const allowed =
+    consumeRateLimit("tmdb:minute", UPSTREAM_PER_MINUTE) &&
+    consumeRateLimit("tmdb:hour", UPSTREAM_PER_HOUR);
+  if (allowed) {
+    return null;
+  }
+  return failure(
+    "rate_limit",
+    "Marquee is pausing TMDB requests so the key is not used up. Try again in a few minutes.",
+  );
 }
 
 function raiseTmdb(error: TmdbError): never {
@@ -167,13 +194,42 @@ async function tmdbGet(
 
 export async function searchTitles(
   query: string,
+  userId: string,
 ): Promise<TmdbResult<SearchTitle[]>> {
   await connection();
-  const trimmed = query.trim();
+  const normalized = normalizeSearchQuery(query);
+  if (!normalized) {
+    return {
+      ok: false,
+      error: failure("bad_response", "Use 2 to 80 characters."),
+    };
+  }
+  if (userId.length === 0) {
+    return {
+      ok: false,
+      error: failure("unauthorized", "Sign in before searching."),
+    };
+  }
   if (!hasTmdbCredentials()) {
     return { ok: false, error: failure("missing_key") };
   }
-  return runCached(() => searchTitlesCached(trimmed));
+  const allowed =
+    consumeRateLimit(`search:${userId}`, SEARCH_PER_USER) &&
+    consumeRateLimit("search:all", SEARCH_GLOBAL);
+  if (!allowed) {
+    return {
+      ok: false,
+      error: failure(
+        "rate_limit",
+        "Too many searches. Wait a few minutes and try again.",
+      ),
+    };
+  }
+  const paused = upstreamPause();
+  if (paused) {
+    return { ok: false, error: paused };
+  }
+  return runCached(() => searchTitlesCached(normalized));
 }
 
 async function searchTitlesCached(query: string): Promise<SearchTitle[]> {
@@ -194,8 +250,9 @@ async function searchTitlesCached(query: string): Promise<SearchTitle[]> {
 
 export async function getTvShow(id: number): Promise<TmdbResult<TvShow>> {
   await connection();
-  if (!hasTmdbCredentials()) {
-    return { ok: false, error: failure("missing_key") };
+  const blocked = gateTmdb();
+  if (blocked) {
+    return { ok: false, error: blocked };
   }
   return runCached(() => getTvShowCached(id));
 }
@@ -217,8 +274,9 @@ export async function getTvSeason(
   seasonNumber: number,
 ): Promise<TmdbResult<TvSeason>> {
   await connection();
-  if (!hasTmdbCredentials()) {
-    return { ok: false, error: failure("missing_key") };
+  const blocked = gateTmdb();
+  if (blocked) {
+    return { ok: false, error: blocked };
   }
   return runCached(() => getTvSeasonCached(id, seasonNumber));
 }
@@ -242,8 +300,9 @@ async function getTvSeasonCached(
 
 export async function listTrending(): Promise<TmdbResult<SearchTitle[]>> {
   await connection();
-  if (!hasTmdbCredentials()) {
-    return { ok: false, error: failure("missing_key") };
+  const blocked = gateTmdb();
+  if (blocked) {
+    return { ok: false, error: blocked };
   }
   return runCached(() => listTrendingCached());
 }
@@ -264,8 +323,9 @@ export async function listPopular(
   mediaType: MediaType,
 ): Promise<TmdbResult<SearchTitle[]>> {
   await connection();
-  if (!hasTmdbCredentials()) {
-    return { ok: false, error: failure("missing_key") };
+  const blocked = gateTmdb();
+  if (blocked) {
+    return { ok: false, error: blocked };
   }
   return runCached(() => listPopularCached(mediaType));
 }
@@ -285,8 +345,9 @@ async function listPopularCached(mediaType: MediaType): Promise<SearchTitle[]> {
 
 export async function getMovie(id: number): Promise<TmdbResult<Movie>> {
   await connection();
-  if (!hasTmdbCredentials()) {
-    return { ok: false, error: failure("missing_key") };
+  const blocked = gateTmdb();
+  if (blocked) {
+    return { ok: false, error: blocked };
   }
   return runCached(() => getMovieCached(id));
 }

@@ -1,10 +1,21 @@
 import { type NextRequest } from "next/server";
 
 import { authErrorCode } from "@/app/login/messages";
+import { clientAddress } from "@/lib/client-address";
+import { consumeRateLimit } from "@/lib/rate-limit";
+import { requestIsSameOrigin } from "@/lib/same-origin";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 import { redirectTo, supabaseForResponse } from "@/lib/supabase/route";
 
+const SIGNUP_PER_ADDRESS = { limit: 4, windowMs: 60 * 60 * 1000 };
+const SIGNUP_GLOBAL = { limit: 8, windowMs: 60 * 60 * 1000 };
+const LOGIN_PER_ADDRESS = { limit: 30, windowMs: 15 * 60 * 1000 };
+
 export async function POST(request: NextRequest) {
+  if (!requestIsSameOrigin(request)) {
+    return redirectTo(request, "/login?error=rejected");
+  }
+
   const formData = await request.formData();
   const intent = formData.get("intent") === "signup" ? "signup" : "login";
 
@@ -19,6 +30,18 @@ export async function POST(request: NextRequest) {
   }
   if (typeof password !== "string" || password.length < 8) {
     return redirectTo(request, "/login?error=password");
+  }
+
+  const address = clientAddress(request.headers);
+  if (intent === "signup") {
+    const allowed =
+      consumeRateLimit(`signup:${address}`, SIGNUP_PER_ADDRESS) &&
+      consumeRateLimit("signup:all", SIGNUP_GLOBAL);
+    if (!allowed) {
+      return redirectTo(request, "/login?error=slow");
+    }
+  } else if (!consumeRateLimit(`login:${address}`, LOGIN_PER_ADDRESS)) {
+    return redirectTo(request, "/login?error=slow");
   }
 
   const response = redirectTo(request, "/up-next");

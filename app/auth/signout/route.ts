@@ -1,9 +1,14 @@
 import { type NextRequest } from "next/server";
 
+import { requestIsSameOrigin } from "@/lib/same-origin";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 import { redirectTo, supabaseForResponse } from "@/lib/supabase/route";
 
 export async function POST(request: NextRequest) {
+  if (!requestIsSameOrigin(request)) {
+    return redirectTo(request, "/up-next?library=rejected");
+  }
+
   const response = redirectTo(request, "/login");
   if (!getSupabaseEnv()) {
     return response;

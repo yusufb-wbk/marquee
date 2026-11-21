@@ -58,6 +58,19 @@ export function parseNoteField(
   return { ok: true, note: note.length > 0 ? note : null };
 }
 
+/** Five stars, scored out of 10. One click sets a half star, the next fills it. */
+export function nextStarRating(current: number | null, star: number): number {
+  const half = star * 2 - 1;
+  const full = star * 2;
+  if (current === half) {
+    return full;
+  }
+  if (current === full) {
+    return half;
+  }
+  return half;
+}
+
 export const RATING_STEPS = [
   1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10,
 ] as const;

@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import {
   formatRating,
+  nextStarRating,
   parseRatingField,
   ratingToDisplay,
   ratingToStored,
@@ -25,5 +26,14 @@ describe("rating steps", () => {
     assert.deepEqual(parseRatingField("10.5"), { ok: false });
     assert.deepEqual(parseRatingField(""), { ok: true, rating: null });
     assert.deepEqual(parseRatingField("8.5"), { ok: true, rating: 17 });
+  });
+
+  it("fills a star on the second click and scores it out of 10", () => {
+    assert.equal(nextStarRating(null, 1), 1);
+    assert.equal(nextStarRating(1, 1), 2);
+    assert.equal(nextStarRating(2, 1), 1);
+    assert.equal(nextStarRating(null, 5), 9);
+    assert.equal(nextStarRating(9, 5), 10);
+    assert.equal(nextStarRating(8, 3), 5);
   });
 });

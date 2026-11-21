@@ -6,6 +6,7 @@ import { ResultList } from "@/components/result-list";
 import { SearchForm } from "@/components/search-form";
 import { firstQueryValue } from "@/lib/format";
 import { requireUser } from "@/lib/require-user";
+import { normalizeSearchQuery } from "@/lib/search-query";
 import { searchTitles } from "@/lib/tmdb/client";
 
 export const metadata: Metadata = {
@@ -25,9 +26,10 @@ export default function HomePage({ searchParams }: HomePageProps) {
 }
 
 async function SearchScreen({ searchParams }: HomePageProps) {
-  await requireUser();
+  const user = await requireUser();
   const params = await searchParams;
-  const query = firstQueryValue(params.q).trim();
+  const raw = firstQueryValue(params.q).trim().replace(/\s+/g, " ");
+  const query = normalizeSearchQuery(raw);
 
   return (
     <div className="grid gap-6">
@@ -37,26 +39,28 @@ async function SearchScreen({ searchParams }: HomePageProps) {
           Search for a show or a movie, then add it to your list.
         </p>
       </header>
-      <SearchForm query={query} />
-      {query.length === 0 ? (
-        <p className="text-muted">
-          Try <span className="text-foreground">Breaking Bad</span>.
-        </p>
-      ) : query.length > 120 ? (
-        <Message tone="error" title="That search is too long">
-          Use 120 characters or fewer.
+      <SearchForm key={raw} query={query ?? raw} />
+      {query === null && raw.length > 0 ? (
+        <Message tone="error" title="That search cannot be sent">
+          Use 2 to 80 characters.
         </Message>
-      ) : (
+      ) : query ? (
         <Suspense fallback={<p className="text-muted">Searching…</p>}>
-          <SearchResults query={query} />
+          <SearchResults query={query} userId={user.id} />
         </Suspense>
-      )}
+      ) : null}
     </div>
   );
 }
 
-async function SearchResults({ query }: { query: string }) {
-  const result = await searchTitles(query);
+async function SearchResults({
+  query,
+  userId,
+}: {
+  query: string;
+  userId: string;
+}) {
+  const result = await searchTitles(query, userId);
   if (!result.ok) {
     return (
       <Message tone="error" title="Search did not finish">

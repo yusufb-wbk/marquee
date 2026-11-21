@@ -44,7 +44,15 @@ export type TrackedMovie = {
   note: string | null;
 };
 
-export type LibraryCode = "schema" | "save" | "rating" | "date" | "note" | "missing" | "unwatched";
+export type LibraryCode =
+  | "schema"
+  | "save"
+  | "rating"
+  | "date"
+  | "note"
+  | "missing"
+  | "unwatched"
+  | "rejected";
 
 export type LibraryResult<T> =
   | { ok: true; data: T }

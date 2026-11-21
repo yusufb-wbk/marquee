@@ -55,6 +55,16 @@ const alerts: Record<string, AuthAlert> = {
     title: "That confirmation link did not work.",
     body: "It may have expired. Log in, or create the account again.",
   },
+  rejected: {
+    tone: "error",
+    title: "That sign-in came from another site.",
+    body: "Use the form on this page.",
+  },
+  slow: {
+    tone: "error",
+    title: "Too many attempts.",
+    body: "Wait a while, then try again. New accounts are limited so search cannot burn through the TMDB key.",
+  },
 };
 
 export function authAlert(code: string): AuthAlert {

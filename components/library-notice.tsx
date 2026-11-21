@@ -26,6 +26,10 @@ const COPY: Record<Exclude<LibraryCode, "schema">, { title: string; body: string
     title: "Mark the episode watched first",
     body: "A rating or note is stored on a watched episode.",
   },
+  rejected: {
+    title: "That request was blocked",
+    body: "Reload the page and try again from Marquee.",
+  },
 };
 
 function isNoticeCode(
