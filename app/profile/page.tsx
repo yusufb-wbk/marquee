@@ -9,6 +9,7 @@ import { Message } from "@/components/message";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { ProfileView } from "@/components/profile-view";
 import { SchemaSetup } from "@/components/schema-setup";
+import { TmdbAttribution } from "@/components/tmdb-attribution";
 import { WatchedBrowser } from "@/components/watched-browser";
 import { loadEndedTitles } from "@/lib/library/ended";
 import { firstQueryValue } from "@/lib/format";
@@ -117,6 +118,9 @@ async function ProfileScreen({ searchParams }: PageProps) {
           }
         />
       ) : null}
+      <footer className="mt-6 border-t border-line pt-6">
+        <TmdbAttribution />
+      </footer>
     </div>
   );
 }
