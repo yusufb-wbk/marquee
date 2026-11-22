@@ -30,6 +30,9 @@ export async function POST(request: NextRequest) {
   if (typeof password !== "string" || password.length < 8) {
     return redirectTo(request, "/login?error=password");
   }
+  if (intent === "signup" && formData.get("confirm") !== password) {
+    return redirectTo(request, "/login?error=mismatch");
+  }
 
   const address = clientAddress(request.headers);
   if (intent === "signup") {

@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
-import { LoginForm } from "@/app/login/login-form";
-import { CsrfField } from "@/components/csrf-field";
+import { LoginPanel } from "@/app/login/login-form";
+import { CsrfField, readCsrfToken } from "@/components/csrf-field";
 import { authAlert } from "@/app/login/messages";
 import { GoogleIcon } from "@/components/icons";
 import { Message } from "@/components/message";
@@ -51,34 +51,30 @@ async function LoginGate({ searchParams }: LoginPageProps) {
   const code = firstQueryValue(params.error);
   const alert = code.length > 0 ? authAlert(code) : null;
 
+  const csrf = await readCsrfToken();
+
   return (
-    <div className="mx-auto grid w-full max-w-md gap-6">
-      <header className="grid gap-2">
-        <h1 className="font-display text-4xl tracking-tight">Sign in</h1>
-        <p className="leading-7 text-muted">
-          Continue with Google, or use an email and password. Marquee keeps
-          only a session cookie.
-        </p>
-      </header>
-      {alert ? (
-        <Message tone={alert.tone} title={alert.title}>
-          {alert.body}
-        </Message>
-      ) : null}
-      <div className="grid gap-4 rounded-2xl border border-line bg-card p-4">
-        <form action="/auth/google" method="post">
-          <CsrfField />
-          <button
-            type="submit"
-            className="inline-flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#747775] bg-white px-4 text-base font-medium text-[#1f1f1f]"
-          >
-            <GoogleIcon className="h-5 w-5" />
-            Continue with Google
-          </button>
-        </form>
-        <p className="text-center text-sm text-muted">or use email</p>
-        <LoginForm />
-      </div>
-    </div>
+    <LoginPanel
+      csrf={csrf}
+      initialMode={code === "mismatch" ? "signup" : "login"}
+      alert={
+        alert ? (
+          <Message tone={alert.tone} title={alert.title}>
+            {alert.body}
+          </Message>
+        ) : null
+      }
+    >
+      <form action="/auth/google" method="post">
+        <CsrfField />
+        <button
+          type="submit"
+          className="inline-flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#747775] bg-white px-4 text-base font-medium text-[#1f1f1f]"
+        >
+          <GoogleIcon className="h-5 w-5" />
+          Continue with Google
+        </button>
+      </form>
+    </LoginPanel>
   );
 }

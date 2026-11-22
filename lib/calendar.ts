@@ -46,6 +46,28 @@ export function isOnOrBetween(
   return value >= start && value <= end;
 }
 
+export const CONFIRMED_YEAR_DAYS = 365;
+
+/** A dated next episode that has already aired, or airs within the coming year. */
+export function confirmedThisYear(airDate: string | null, today: string): boolean {
+  if (!airDate) {
+    return false;
+  }
+  const days = daysUntil(today, airDate);
+  return days !== null && days <= CONFIRMED_YEAR_DAYS;
+}
+
+export function showsAiringThisYear<
+  T extends { next: { state: string; episode?: { airDate: string | null } } },
+>(items: readonly T[], today: string): T[] {
+  return items.filter((item) => {
+    if (item.next.state !== "ready") {
+      return false;
+    }
+    return confirmedThisYear(item.next.episode?.airDate ?? null, today);
+  });
+}
+
 /** Whole calendar days from `from` until `to`. Negative when `to` is earlier. */
 export function daysUntil(from: string, to: string): number | null {
   const start = parseIsoDate(from);
@@ -55,6 +77,34 @@ export function daysUntil(from: string, to: string): number | null {
   }
   const span = Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`);
   return Math.round(span / 86_400_000);
+}
+
+export type AirHero =
+  | { kind: "word"; value: string }
+  | { kind: "count"; value: string; label: string };
+
+/** The countdown that leads an up-next card. */
+export function airHero(today: string, airDate: string | null): AirHero | null {
+  if (!airDate) {
+    return null;
+  }
+  const days = daysUntil(today, airDate);
+  if (days === null) {
+    return null;
+  }
+  if (days === 0) {
+    return { kind: "word", value: "Today" };
+  }
+  if (days === 1) {
+    return { kind: "count", value: "1", label: "day" };
+  }
+  if (days > 1) {
+    return { kind: "count", value: String(days), label: "days" };
+  }
+  if (days === -1) {
+    return { kind: "count", value: "1", label: "day ago" };
+  }
+  return { kind: "count", value: String(Math.abs(days)), label: "days ago" };
 }
 
 export function airCountdown(today: string, airDate: string | null): string | null {

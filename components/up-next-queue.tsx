@@ -40,7 +40,7 @@ export function UpNextQueue({
   if (visible.length === 0) {
     return (
       <p className="text-muted">
-        {hadWatching ? "You are caught up." : "Nothing is queued."}
+        {hadWatching ? "Nothing is dated for the next year." : "Nothing is queued."}
       </p>
     );
   }

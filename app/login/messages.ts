@@ -15,6 +15,11 @@ const alerts: Record<string, AuthAlert> = {
     title: "Use a password of at least 8 characters.",
     body: null,
   },
+  mismatch: {
+    tone: "error",
+    title: "Those passwords do not match.",
+    body: null,
+  },
   credentials: {
     tone: "error",
     title: "That email and password don't match.",

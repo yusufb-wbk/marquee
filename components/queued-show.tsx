@@ -2,8 +2,11 @@
 
 import { useState, type FormEvent } from "react";
 
+import Link from "next/link";
+
+import { Poster } from "@/components/poster";
 import { TitleLink } from "@/components/title-link";
-import { airCountdown } from "@/lib/calendar";
+import { airHero, confirmedThisYear } from "@/lib/calendar";
 import { formatAirDate } from "@/lib/format";
 import { libraryNotice } from "@/lib/library/notices";
 import { submitLibraryForm, submitterOf } from "@/lib/library/submit";
@@ -89,7 +92,10 @@ export function QueuedShow({
       return;
     }
     const following = readNext(result.data) ?? { state: "caught_up" };
-    if (following.state === "caught_up") {
+    if (
+      following.state !== "ready" ||
+      !confirmedThisYear(following.episode.airDate, today)
+    ) {
       onCaughtUp();
       return;
     }
@@ -115,24 +121,29 @@ export function QueuedShow({
   }
 
   const aired = formatAirDate(current.episode.airDate);
-  const countdown = airCountdown(today, current.episode.airDate);
-  const meta = [
+  const episodeLine = [
     `S${current.episode.seasonNumber} E${current.episode.episodeNumber}`,
     current.episode.name,
-    aired,
-    countdown,
   ]
-    .filter((part): part is string => Boolean(part))
+    .filter((part) => part.length > 0)
     .join(" · ");
 
   return (
-    <div className="grid gap-2">
-      <TitleLink
+    <div className="grid gap-3 rounded-3xl border border-line bg-card p-4">
+      <Link
         href={`/tv/${showId}?season=${current.episode.seasonNumber}`}
-        title={title}
-        posterUrl={posterUrl}
-        meta={meta}
-      />
+        className="grid items-center gap-4 sm:grid-cols-[7.5rem_1fr]"
+      >
+        <AirCountdown today={today} airDate={current.episode.airDate} />
+        <span className="flex min-w-0 items-center gap-3">
+          <Poster src={posterUrl} title={title} />
+          <span className="grid min-w-0 gap-1">
+            <span className="font-display text-2xl leading-tight">{title}</span>
+            <span className="text-sm text-muted">{episodeLine}</span>
+            {aired ? <span className="text-sm font-medium">{aired}</span> : null}
+          </span>
+        </span>
+      </Link>
       <form action="/library/episode" method="post" onSubmit={onSubmit}>
         <input type="hidden" name="csrf" value={csrf} />
         <input type="hidden" name="showId" value={showId} />
@@ -156,5 +167,23 @@ export function QueuedShow({
         </p>
       ) : null}
     </div>
+  );
+}
+
+function AirCountdown({ today, airDate }: { today: string; airDate: string | null }) {
+  const hero = airHero(today, airDate);
+  if (!hero) {
+    return null;
+  }
+  if (hero.kind === "word") {
+    return (
+      <p className="text-center font-display text-4xl leading-none text-accent">{hero.value}</p>
+    );
+  }
+  return (
+    <p className="grid justify-items-center gap-1 text-center text-accent">
+      <span className="font-display text-5xl leading-none tabular-nums">{hero.value}</span>
+      <span className="text-xs font-semibold uppercase tracking-[0.16em]">{hero.label}</span>
+    </p>
   );
 }

@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import {
   addCalendarDays,
   airCountdown,
+  airHero,
   daysUntil,
   isOnOrBetween,
   parseIsoDate,
@@ -36,5 +37,11 @@ describe("calendar window", () => {
     assert.equal(airCountdown("2026-11-22", "2026-11-21"), "Yesterday");
     assert.equal(airCountdown("2026-11-22", "2026-11-20"), "2 days ago");
     assert.equal(airCountdown("2026-11-22", null), null);
+    assert.deepEqual(airHero("2026-11-22", "2026-12-03"), {
+      kind: "count",
+      value: "11",
+      label: "days",
+    });
+    assert.deepEqual(airHero("2026-11-22", "2026-11-22"), { kind: "word", value: "Today" });
   });
 });

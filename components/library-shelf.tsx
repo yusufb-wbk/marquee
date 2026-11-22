@@ -14,17 +14,13 @@ export type ShelfTitle = {
 };
 
 export function LibraryShelf({
-  watching,
   watchlist,
   paused,
   toWatch,
-  watched,
 }: {
-  watching: ShelfTitle[];
   watchlist: ShelfTitle[];
   paused: ShelfTitle[];
   toWatch: ShelfTitle[];
-  watched: ShelfTitle[];
 }) {
   const [side, setSide] = useState<"shows" | "movies">("shows");
 
@@ -48,8 +44,7 @@ export function LibraryShelf({
       </div>
       {side === "shows" ? (
         <div className="grid gap-8">
-          <OpenGroup title="Watching" titles={watching} empty="No shows in progress." />
-          <OpenGroup title="Watchlist" titles={watchlist} empty="" />
+          <OpenGroup title="Shows" titles={watchlist} empty="No shows on your watchlist." />
           {paused.length > 0 ? (
             <details className="grid gap-3">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
@@ -62,8 +57,7 @@ export function LibraryShelf({
         </div>
       ) : (
         <div className="grid gap-8">
-          <OpenGroup title="To watch" titles={toWatch} empty="No movies waiting." />
-          <OpenGroup title="Watched" titles={watched} empty="" />
+          <OpenGroup title="Movies" titles={toWatch} empty="No movies on your watchlist." />
         </div>
       )}
       <Link href="/" className="text-sm font-semibold text-accent">

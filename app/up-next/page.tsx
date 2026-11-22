@@ -1,19 +1,16 @@
 import { Suspense } from "react";
 
 import { readCsrfToken } from "@/components/csrf-field";
-import { LibraryShelf, type ShelfTitle } from "@/components/library-shelf";
 import { LibraryNotice } from "@/components/library-notice";
 import { Message } from "@/components/message";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { UpNextQueue } from "@/components/up-next-queue";
 import { SchemaSetup } from "@/components/schema-setup";
-import { isoDateUTC } from "@/lib/calendar";
-import { firstQueryValue, formatAirDate } from "@/lib/format";
-import type { ShowStatus } from "@/lib/library/database";
-import type { TrackedMovie, TrackedShow } from "@/lib/library/queries";
+import { isoDateUTC, showsAiringThisYear } from "@/lib/calendar";
+import { firstQueryValue } from "@/lib/format";
+import type { TrackedShow } from "@/lib/library/queries";
 import { loadLibrary } from "@/lib/library/queries";
 import { lookupNextEpisode, watchedKeys } from "@/lib/library/up-next";
-import { showsWithANextEpisode } from "@/lib/queue";
 import { requireUser } from "@/lib/require-user";
 
 export const metadata = {
@@ -57,7 +54,6 @@ async function Queue({
 }: {
   library: {
     shows: TrackedShow[];
-    movies: TrackedMovie[];
     episodes: { showTmdbId: number; seasonNumber: number; episodeNumber: number }[];
   };
 }) {
@@ -74,58 +70,27 @@ async function Queue({
     }),
   );
 
-  const waiting = showsWithANextEpisode(queued);
+  const waiting = showsAiringThisYear(queued, today).slice().sort(byAirDate);
   return (
-    <div className="grid gap-8">
-      <UpNextQueue
-        csrf={csrf}
-        hadWatching={watching.length > 0}
-        today={today}
-        items={waiting.map((item) => ({
-          showId: item.show.tmdbId,
-          title: item.show.title,
-          posterUrl: item.show.posterUrl,
-          next: item.next,
-        }))}
-      />
-      <LibraryShelf
-        watching={showTitles(library.shows, "watching")}
-        watchlist={showTitles(library.shows, "watchlist")}
-        paused={showTitles(library.shows, "stopped")}
-        toWatch={library.movies
-          .filter((movie) => movie.status === "watchlist")
-          .map((movie) => movieTitle(movie, ""))}
-        watched={library.movies
-          .filter((movie) => movie.status === "watched")
-          .map((movie) => movieTitle(movie, watchedMeta(movie.watchedOn)))}
-      />
-    </div>
+    <UpNextQueue
+      csrf={csrf}
+      hadWatching={watching.length > 0}
+      today={today}
+      items={waiting.map((item) => ({
+        showId: item.show.tmdbId,
+        title: item.show.title,
+        posterUrl: item.show.posterUrl,
+        next: item.next,
+      }))}
+    />
   );
 }
 
-function showTitles(shows: TrackedShow[], status: ShowStatus): ShelfTitle[] {
-  return shows
-    .filter((show) => show.status === status)
-    .map((show) => ({
-      id: show.tmdbId,
-      href: `/tv/${show.tmdbId}`,
-      title: show.title,
-      posterUrl: show.posterUrl,
-      meta: "",
-    }));
-}
-
-function movieTitle(movie: TrackedMovie, meta: string): ShelfTitle {
-  return {
-    id: movie.tmdbId,
-    href: `/movie/${movie.tmdbId}`,
-    title: movie.title,
-    posterUrl: movie.posterUrl,
-    meta,
-  };
-}
-
-function watchedMeta(watchedOn: string | null): string {
-  const label = formatAirDate(watchedOn);
-  return label ? `Watched ${label}` : "";
+function byAirDate(
+  left: { next: { state: string; episode?: { airDate: string | null } } },
+  right: { next: { state: string; episode?: { airDate: string | null } } },
+): number {
+  const leftDate = left.next.state === "ready" ? (left.next.episode?.airDate ?? "") : "";
+  const rightDate = right.next.state === "ready" ? (right.next.episode?.airDate ?? "") : "";
+  return leftDate.localeCompare(rightDate);
 }

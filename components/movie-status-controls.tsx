@@ -64,20 +64,26 @@ export function MovieStatusControls({
   }
 
   return (
-    <form action="/library/movie" method="post" className="grid gap-4" onSubmit={onSubmit}>
+    <form
+      action="/library/movie"
+      method="post"
+      className="grid w-full max-w-lg gap-4 rounded-3xl border border-line bg-card p-4 sm:p-5"
+      onSubmit={onSubmit}
+    >
       <input type="hidden" name="csrf" value={csrf} />
       <input type="hidden" name="tmdbId" value={movieId} />
       <input type="hidden" name="next" value={nextPath} />
-      <label className="grid gap-2 text-sm font-medium">
-        Watched on
-        <input
-          type="date"
-          name="watchedOn"
-          defaultValue={watchedOn ?? today}
-          className="h-12 rounded-xl border border-line bg-background px-4 text-base font-normal text-foreground"
-        />
-      </label>
-      <RatingField
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="grid w-full max-w-56 gap-2 text-sm font-medium">
+          Watched on
+          <input
+            type="date"
+            name="watchedOn"
+            defaultValue={watchedOn ?? today}
+            className="date-field h-12 w-full rounded-xl border border-line bg-background px-3 text-base font-normal text-foreground"
+          />
+        </label>
+        <RatingField
         key={`${ratingVersion}:${committedRating ?? "none"}`}
         stored={committedRating}
         submit={
@@ -92,6 +98,7 @@ export function MovieStatusControls({
             : null
         }
       />
+      </div>
       <div className="grid grid-cols-2 gap-2">
         <button
           type="submit"

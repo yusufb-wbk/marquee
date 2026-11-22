@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { CheckIcon, CompassIcon, PlayIcon, SearchIcon } from "@/components/icons";
+import { BookmarkIcon, CompassIcon, PlayIcon, SearchIcon } from "@/components/icons";
 
 const LINKS = [
   { href: "/up-next", label: "Next", Icon: PlayIcon },
   { href: "/", label: "Search", Icon: SearchIcon },
-  { href: "/watched", label: "Watched", Icon: CheckIcon },
+  { href: "/watchlist", label: "Watchlist", Icon: BookmarkIcon },
   { href: "/discover", label: "Discover", Icon: CompassIcon },
 ] as const;
 
@@ -19,8 +19,8 @@ function isCurrent(pathname: string, href: string): boolean {
   if (href === "/up-next") {
     return pathname === "/up-next" || pathname === "/upcoming";
   }
-  if (href === "/watched") {
-    return pathname === "/watched" || pathname === "/stats";
+  if (href === "/watchlist") {
+    return pathname === "/watchlist";
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }

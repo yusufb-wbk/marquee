@@ -74,6 +74,16 @@ dialog::backdrop {
   background: rgb(0 0 0 / 0.72);
 }
 
+.date-field {
+  color-scheme: inherit;
+}
+
+.date-field::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  margin-inline-start: 0.35rem;
+  opacity: 0.85;
+}
+
 .skeleton {
   background-color: var(--line);
   animation: skeleton-fade 1.6s ease-in-out infinite;
