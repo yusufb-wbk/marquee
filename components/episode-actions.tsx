@@ -13,11 +13,13 @@ const PEEK = 0;
 const OPEN = 76;
 
 const primary =
-  "inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-60";
+  "inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-line px-4 text-sm font-semibold transition-[background-color,color,transform] duration-300 ease-out motion-reduce:transition-none disabled:opacity-60";
 const choice =
   "inline-flex h-12 items-center justify-center rounded-xl bg-accent px-4 text-sm font-semibold text-accent-ink disabled:opacity-60";
 const quiet =
   "inline-flex h-12 items-center justify-center rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-60";
+const watchedBar =
+  "flex h-12 min-w-0 flex-1 items-center justify-between gap-3 rounded-xl bg-notice-bg px-3 text-left text-notice transition-[transform,opacity] duration-300 ease-out motion-reduce:transition-none disabled:opacity-60";
 
 export function EpisodeActions({
   watched,
@@ -27,23 +29,37 @@ export function EpisodeActions({
   pending: WatchIntent | null;
 }) {
   const [open, setOpen] = useState(false);
+  const [arming, setArming] = useState(false);
   const busy = pending !== null;
 
   if (watched) {
     return <WatchedRow pending={pending} />;
   }
 
+  function showChoices() {
+    if (reduceMotion()) {
+      setOpen(true);
+      return;
+    }
+    setArming(true);
+    window.setTimeout(() => {
+      setOpen(true);
+    }, 220);
+  }
+
   if (!open) {
     return (
       <button
         type="button"
-        onClick={() => {
-          setOpen(true);
-        }}
-        className={primary}
+        onClick={showChoices}
+        className={
+          arming
+            ? `${primary} scale-[0.98] border-transparent bg-notice-bg text-notice`
+            : primary
+        }
       >
-        <CheckIcon className="h-5 w-5" />
-        Mark watched
+        <CheckIcon className={`h-5 w-5 transition-transform duration-300 ${arming ? "scale-125" : ""}`} />
+        Mark as watched
       </button>
     );
   }
@@ -60,10 +76,15 @@ export function EpisodeActions({
   );
 }
 
+function reduceMotion(): boolean {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 function WatchedRow({ pending }: { pending: WatchIntent | null }) {
   const [reveal, setReveal] = useState(PEEK);
   const [open, setOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const gesture = useRef({ x: 0, y: 0, base: PEEK, tracking: false, reveal: PEEK });
   const dragged = useRef(false);
   const busy = pending !== null;
@@ -117,6 +138,28 @@ function WatchedRow({ pending }: { pending: WatchIntent | null }) {
     setReveal(nextOpen ? OPEN : PEEK);
   }
 
+  function onUnwatchClick(event: MouseEvent<HTMLButtonElement>) {
+    if (dragged.current) {
+      event.preventDefault();
+      dragged.current = false;
+      return;
+    }
+    if (leaving || busy) {
+      event.preventDefault();
+      return;
+    }
+    if (reduceMotion()) {
+      return;
+    }
+    event.preventDefault();
+    setLeaving(true);
+    const form = event.currentTarget.form;
+    const button = event.currentTarget;
+    window.setTimeout(() => {
+      form?.requestSubmit(button);
+    }, 280);
+  }
+
   return (
     <div className="relative overflow-hidden sm:overflow-visible">
       <button
@@ -124,15 +167,14 @@ function WatchedRow({ pending }: { pending: WatchIntent | null }) {
         name="intent"
         value="unwatch"
         disabled={busy}
-        aria-label="Not watched"
-        title="Not watched"
-        className="absolute inset-y-0 right-0 inline-flex w-16 items-center justify-center rounded-xl border border-line text-muted disabled:opacity-60 sm:hidden"
+        aria-label="Mark as not watched"
+        className="absolute inset-y-0 right-0 inline-flex w-[4.75rem] items-center justify-center rounded-xl border border-line text-sm font-semibold text-muted disabled:opacity-60 sm:hidden"
       >
         <EyeOffIcon className="h-6 w-6" />
       </button>
       <div
         className={`relative flex items-center gap-3 bg-background sm:!translate-x-0 ${
-          dragging ? "" : "transition-transform motion-reduce:transition-none"
+          dragging ? "" : "transition-transform duration-300 ease-out motion-reduce:transition-none"
         }`}
         style={{ transform: `translateX(-${shown}px)` }}
         onPointerDown={onPointerDown}
@@ -145,24 +187,19 @@ function WatchedRow({ pending }: { pending: WatchIntent | null }) {
           name="intent"
           value="unwatch"
           disabled={busy}
-          onClick={(event: MouseEvent<HTMLButtonElement>) => {
-            if (!dragged.current) {
-              return;
-            }
-            event.preventDefault();
-            dragged.current = false;
-          }}
-          className="flex h-12 min-w-0 flex-1 items-center justify-between gap-3 rounded-xl bg-notice-bg px-3 text-left text-notice disabled:opacity-60"
+          onClick={onUnwatchClick}
+          className={leaving ? `${watchedBar} opacity-70` : watchedBar}
         >
           <span className="flex items-center gap-3">
-            <CheckIcon className="h-7 w-7" />
+            <CheckIcon
+              className={`h-7 w-7 transition-transform duration-300 ${leaving ? "scale-50 -rotate-12" : ""}`}
+            />
             <span className="text-base font-semibold">
-              {pending === "unwatch" ? "Saving…" : "Watched"}
+              {pending === "unwatch" ? "Saving…" : "Mark as not watched"}
             </span>
           </span>
-          <span className="sm:hidden">
+          <span className={`sm:hidden ${leaving ? "opacity-0" : ""}`}>
             <ChevronLeftIcon className="h-5 w-5" />
-            <span className="sr-only">Tap to mark not watched, or swipe left.</span>
           </span>
         </button>
         <button
@@ -170,8 +207,8 @@ function WatchedRow({ pending }: { pending: WatchIntent | null }) {
           name="intent"
           value="unwatch"
           disabled={busy}
-          aria-label="Not watched"
-          title="Not watched"
+          aria-label="Mark as not watched"
+          title="Mark as not watched"
           className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-line text-muted disabled:opacity-60 sm:inline-flex"
         >
           <EyeOffIcon className="h-5 w-5" />
