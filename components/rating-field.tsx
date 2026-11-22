@@ -24,7 +24,7 @@ export function RatingField({
   const submitted = value === null ? "" : String(value);
 
   return (
-    <div>
+    <div className="flex justify-center">
       <input type="hidden" name="rating" value={submitted} />
       <RatingTrigger
         value={value}
