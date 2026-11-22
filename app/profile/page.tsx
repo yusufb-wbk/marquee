@@ -15,6 +15,7 @@ import { firstQueryValue } from "@/lib/format";
 import type { ShowStatus } from "@/lib/library/database";
 import type { TrackedMovie, TrackedShow } from "@/lib/library/queries";
 import { loadLibrary } from "@/lib/library/queries";
+import { userRatingLabel } from "@/lib/rating";
 import { requireUser } from "@/lib/require-user";
 import { buildWatchedTitles } from "@/lib/watched";
 
@@ -118,6 +119,8 @@ function showTitles(shows: TrackedShow[], status: ShowStatus): ShelfTitle[] {
       title: show.title,
       posterUrl: show.posterUrl,
       meta: "",
+      genres: show.genres.slice(0, 2),
+      rating: userRatingLabel(show.rating),
     }));
 }
 
@@ -128,5 +131,7 @@ function movieTitle(movie: TrackedMovie): ShelfTitle {
     title: movie.title,
     posterUrl: movie.posterUrl,
     meta: "",
+    genres: movie.genres.slice(0, 2),
+    rating: userRatingLabel(movie.rating),
   };
 }

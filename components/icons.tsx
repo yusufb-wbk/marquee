@@ -24,6 +24,17 @@ function Svg({
   );
 }
 
+export function StarIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M12 2.4 14.7 8.2 21 9.1 16.4 13.6 17.6 20 12 16.9 6.4 20 7.6 13.6 3 9.1 9.3 8.2 12 2.4Z"
+      />
+    </svg>
+  );
+}
+
 export function CheckIcon({ className }: IconProps) {
   return (
     <Svg className={className}>

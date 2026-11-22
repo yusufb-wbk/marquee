@@ -3,6 +3,7 @@ import "server-only";
 import { isoDateUTC, showsEndedForNow } from "@/lib/calendar";
 import type { TrackedShow } from "@/lib/library/queries";
 import { lookupNextEpisode, watchedKeys } from "@/lib/library/up-next";
+import { userRatingLabel } from "@/lib/rating";
 
 export type EndedTitle = {
   id: number;
@@ -10,6 +11,8 @@ export type EndedTitle = {
   title: string;
   posterUrl: string | null;
   meta: string;
+  genres: string[];
+  rating: string | null;
 };
 
 export async function loadEndedTitles(
@@ -34,5 +37,7 @@ export async function loadEndedTitles(
     title: item.show.title,
     posterUrl: item.show.posterUrl,
     meta: "",
+    genres: item.show.genres.slice(0, 2),
+    rating: userRatingLabel(item.show.rating),
   }));
 }

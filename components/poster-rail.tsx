@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Poster } from "@/components/poster";
+import { audienceScore, Score } from "@/components/score";
 import type { SearchTitle } from "@/lib/tmdb/types";
 
 export function PosterRail({
@@ -23,6 +24,8 @@ export function PosterRail({
       <ul className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {titles.map((item) => {
           const href = item.mediaType === "tv" ? `/tv/${item.id}` : `/movie/${item.id}`;
+          const score = audienceScore(item.rating);
+          const kind = item.mediaType === "tv" ? "Show" : "Movie";
           return (
             <li key={`${item.mediaType}-${item.id}`} className="w-28 shrink-0 sm:w-36">
               <Link href={href} prefetch={true} className="grid gap-2">
@@ -30,9 +33,11 @@ export function PosterRail({
                 <span className="line-clamp-2 text-sm font-semibold leading-5">
                   {item.title}
                 </span>
-                <span className="text-xs text-muted">
-                  {item.year ?? (item.mediaType === "tv" ? "Show" : "Movie")}
-                </span>
+                <span className="text-xs text-muted">{item.year ?? kind}</span>
+                {score ? <Score value={score} /> : null}
+                {item.genres[0] ? (
+                  <span className="line-clamp-1 text-xs text-muted">{item.genres[0]}</span>
+                ) : null}
               </Link>
             </li>
           );

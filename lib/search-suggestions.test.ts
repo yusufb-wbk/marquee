@@ -15,6 +15,8 @@ const title: SearchTitle = {
   year: "2008",
   overview: "A chemistry teacher.",
   posterUrl: null,
+  genres: ["Drama", "Crime"],
+  rating: 8.9,
 };
 
 describe("search suggestions", () => {

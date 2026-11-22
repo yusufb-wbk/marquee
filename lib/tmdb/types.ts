@@ -28,6 +28,8 @@ export type SearchTitle = {
   year: string | null;
   overview: string;
   posterUrl: string | null;
+  genres: string[];
+  rating: number | null;
 };
 
 export type SeasonSummary = {

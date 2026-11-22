@@ -66,6 +66,8 @@ async function EndedList({
             title={title.title}
             posterUrl={title.posterUrl}
             meta={title.meta}
+            genres={title.genres}
+            rating={title.rating}
           />
         </li>
       ))}

@@ -1,3 +1,4 @@
+import { genreNames } from "@/lib/tmdb/genres";
 import type {
   AiringEpisode,
   Episode,
@@ -39,6 +40,26 @@ function readSeasonNumber(value: unknown): number | null {
     return null;
   }
   return value;
+}
+
+function readGenreIds(value: unknown): number[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const ids: number[] = [];
+  for (const item of value) {
+    if (typeof item === "number" && Number.isInteger(item) && item > 0) {
+      ids.push(item);
+    }
+  }
+  return ids;
+}
+
+function readAudienceRating(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0 || value > 10) {
+    return null;
+  }
+  return Math.round(value * 10) / 10;
 }
 
 function readRuntime(value: unknown): number | null {
@@ -152,6 +173,8 @@ function parseSearchTitle(
     year: yearFromDate(date),
     overview: readText(value.overview),
     posterUrl: posterUrl(readPosterPath(value.poster_path)),
+    genres: genreNames(readGenreIds(value.genre_ids)),
+    rating: readAudienceRating(value.vote_average),
   };
 }
 

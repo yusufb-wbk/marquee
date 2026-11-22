@@ -12,6 +12,8 @@ export type ShelfTitle = {
   title: string;
   posterUrl: string | null;
   meta: string;
+  genres: string[];
+  rating: string | null;
 };
 
 export function LibraryShelf({
@@ -142,6 +144,8 @@ function TitleList({ titles }: { titles: ShelfTitle[] }) {
             title={title.title}
             posterUrl={title.posterUrl}
             meta={title.meta}
+            genres={title.genres}
+            rating={title.rating}
           />
         </li>
       ))}

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Poster } from "@/components/poster";
+import { audienceScore, Score } from "@/components/score";
 import { titleOverview } from "@/lib/overview";
 import type { SearchTitle } from "@/lib/tmdb/types";
 
@@ -20,6 +21,7 @@ export function ResultList({ titles }: { titles: SearchTitle[] }) {
         const href =
           title.mediaType === "tv" ? `/tv/${title.id}` : `/movie/${title.id}`;
         const label = title.mediaType === "tv" ? "Show" : "Movie";
+        const score = audienceScore(title.rating);
         return (
           <li key={`${title.mediaType}-${title.id}`}>
             <Link
@@ -40,6 +42,14 @@ export function ResultList({ titles }: { titles: SearchTitle[] }) {
                     {label}
                   </span>
                 </span>
+                {score || title.genres.length > 0 ? (
+                  <span className="flex flex-wrap items-center gap-2">
+                    {score ? <Score value={score} /> : null}
+                    {title.genres.length > 0 ? (
+                      <span className="text-sm text-muted">{title.genres.join(" · ")}</span>
+                    ) : null}
+                  </span>
+                ) : null}
                 <span className="line-clamp-3 text-sm leading-6 text-muted">
                   {titleOverview(title.overview)}
                 </span>

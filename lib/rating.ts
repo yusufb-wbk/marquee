@@ -21,6 +21,11 @@ export function ratingToDisplay(stored: number): number | null {
   return stored / 2;
 }
 
+export function userRatingLabel(stored: number | null): string | null {
+  const display = formatRating(stored);
+  return display === null ? null : `${display}/10`;
+}
+
 export function formatRating(stored: number | null): string | null {
   const display = stored === null ? null : ratingToDisplay(stored);
   if (display === null) {
