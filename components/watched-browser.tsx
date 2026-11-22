@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import { ShowMore, useIncremental } from "@/components/incremental-list";
 import { Poster } from "@/components/poster";
 import { FilterRow } from "@/components/trending-browser";
 import { WatchedRating } from "@/components/watched-rating";
@@ -161,43 +162,47 @@ function WatchedList({
   csrf: string;
   onRated: (kind: WatchedTitle["kind"], id: number, rating: number | null) => void;
 }) {
+  const { shown, remaining, showMore } = useIncremental(titles);
   return (
-    <ul className="grid gap-3 lg:grid-cols-2">
-      {titles.map((title) => (
-        <li
-          key={`${title.kind}-${title.id}`}
-          className="flex gap-3 rounded-2xl border border-line bg-card p-3"
-        >
-          <Link
-            href={title.kind === "tv" ? `/tv/${title.id}` : `/movie/${title.id}`}
-            className="shrink-0"
+    <div className="grid gap-4">
+      <ul className="grid gap-3 lg:grid-cols-2">
+        {shown.map((title) => (
+          <li
+            key={`${title.kind}-${title.id}`}
+            className="flex gap-3 rounded-2xl border border-line bg-card p-3"
           >
-            <Poster src={title.posterUrl} title={title.title} />
-          </Link>
-          <div className="grid min-w-0 gap-2">
             <Link
               href={title.kind === "tv" ? `/tv/${title.id}` : `/movie/${title.id}`}
-              className="grid gap-1"
+              className="shrink-0"
             >
-              <span className="font-display text-xl leading-tight">{title.title}</span>
-              <span className="text-sm text-muted">
-                {[title.year, title.detail, ...title.genres.slice(0, 3)]
-                  .filter((part): part is string => Boolean(part))
-                  .join(" · ")}
-              </span>
+              <Poster src={title.posterUrl} title={title.title} />
             </Link>
-            <WatchedRating
-              csrf={csrf}
-              kind={title.kind}
-              id={title.id}
-              stored={title.rating}
-              onRated={(rating) => {
-                onRated(title.kind, title.id, rating);
-              }}
-            />
-          </div>
-        </li>
-      ))}
-    </ul>
+            <div className="grid min-w-0 gap-2">
+              <Link
+                href={title.kind === "tv" ? `/tv/${title.id}` : `/movie/${title.id}`}
+                className="grid gap-1"
+              >
+                <span className="font-display text-xl leading-tight">{title.title}</span>
+                <span className="text-sm text-muted">
+                  {[title.year, title.detail, ...title.genres.slice(0, 3)]
+                    .filter((part): part is string => Boolean(part))
+                    .join(" · ")}
+                </span>
+              </Link>
+              <WatchedRating
+                csrf={csrf}
+                kind={title.kind}
+                id={title.id}
+                stored={title.rating}
+                onRated={(rating) => {
+                  onRated(title.kind, title.id, rating);
+                }}
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
+      <ShowMore remaining={remaining} onMore={showMore} />
+    </div>
   );
 }

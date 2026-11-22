@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 
 import { FilterRow } from "@/components/trending-browser";
-import { ChevronLeftIcon } from "@/components/icons";
+import { ShowMore, useIncremental } from "@/components/incremental-list";
 import { TitleLink } from "@/components/title-link";
 import {
   catalogGenres,
@@ -31,12 +31,13 @@ export type ShelfTitle = {
 
 export function LibraryShelf({
   watchlist,
-  ended,
+  endedSlot,
   paused,
   toWatch,
 }: {
   watchlist: ShelfTitle[];
-  ended: ShelfTitle[];
+  /** The "Ended" link. It needs TMDB lookups, so the page streams it in on its own. */
+  endedSlot?: ReactNode;
   paused: ShelfTitle[];
   toWatch: ShelfTitle[];
 }) {
@@ -61,6 +62,7 @@ export function LibraryShelf({
   const genres = useMemo(() => catalogGenres(typed), [typed]);
   const years = useMemo(() => catalogYears(typed), [typed]);
   const visible = useMemo(() => filterCatalog(typed, query), [typed, query]);
+  const visibleTitles = useMemo(() => visible.map((title) => title.source), [visible]);
 
   function update(patch: Partial<{ text: string; genre: string; year: string; rating: string; sort: string }>) {
     setQuery((current) => ({
@@ -99,22 +101,11 @@ export function LibraryShelf({
       ) : visible.length === 0 ? (
         <p className="text-sm text-muted">Nothing matches these filters.</p>
       ) : (
-        <TitleList titles={visible.map((title) => title.source)} />
+        <TitleList titles={visibleTitles} />
       )}
       {kind !== "movie" ? (
         <div className="grid gap-8">
-          {ended.length > 0 ? (
-            <Link
-              href="/profile/ended"
-              className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-card px-4 py-3"
-            >
-              <span className="font-display text-2xl">Ended</span>
-              <span className="flex items-center gap-2 text-muted">
-                <span className="text-sm tabular-nums">{ended.length}</span>
-                <ChevronLeftIcon className="h-4 w-4 rotate-180" />
-              </span>
-            </Link>
-          ) : null}
+          {endedSlot}
           {paused.length > 0 ? (
             <details className="grid gap-3">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
@@ -134,20 +125,24 @@ export function LibraryShelf({
 }
 
 function TitleList({ titles }: { titles: ShelfTitle[] }) {
+  const { shown, remaining, showMore } = useIncremental(titles);
   return (
-    <ul className="grid gap-3 lg:grid-cols-2">
-      {titles.map((title) => (
-        <li key={`${title.kind}-${title.id}`}>
-          <TitleLink
-            href={title.href}
-            title={title.title}
-            posterUrl={title.posterUrl}
-            meta={title.meta}
-            genres={title.genres}
-            rating={title.rating}
-          />
-        </li>
-      ))}
-    </ul>
+    <div className="grid gap-4">
+      <ul className="grid gap-3 lg:grid-cols-2">
+        {shown.map((title) => (
+          <li key={`${title.kind}-${title.id}`}>
+            <TitleLink
+              href={title.href}
+              title={title.title}
+              posterUrl={title.posterUrl}
+              meta={title.meta}
+              genres={title.genres}
+              rating={title.rating}
+            />
+          </li>
+        ))}
+      </ul>
+      <ShowMore remaining={remaining} onMore={showMore} />
+    </div>
   );
 }

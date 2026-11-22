@@ -321,6 +321,98 @@ export async function loadLibrary(userId: string): Promise<
   };
 }
 
+const MOVIE_COLUMNS =
+  "user_id, tmdb_id, status, title, year, poster_url, genres, runtime_minutes, watched_on, rating, note, created_at, updated_at";
+
+/**
+ * Shows and movies in full, plus the episode columns a page asks for.
+ * Episode rows are the bulk of a long history, so each page reads only what it uses.
+ */
+async function loadLibraryWith<Row, Episode>(
+  userId: string,
+  episodeColumns: string,
+  mapRow: (row: Row) => Episode,
+): Promise<LibraryResult<{ shows: TrackedShow[]; movies: TrackedMovie[]; episodes: Episode[] }>> {
+  const supabase = await client();
+  const [shows, movies, episodes] = await Promise.all([
+    loadShowRows(supabase, userId),
+    supabase
+      .from("tracked_movies")
+      .select(MOVIE_COLUMNS)
+      .eq("user_id", userId)
+      .order("updated_at", { ascending: false }),
+    selectAllPages<Row>((from, to) =>
+      supabase
+        .from("episode_watches")
+        .select(episodeColumns, { count: "exact" })
+        .eq("user_id", userId)
+        .order("show_tmdb_id")
+        .order("season_number")
+        .order("episode_number")
+        // supabase-js cannot infer row types from a column string held in a variable;
+        // `mapRow` declares the shape of the columns it asked for.
+        .range(from, to) as unknown as PromiseLike<{
+        data: Row[] | null;
+        error: { code?: string; message: string } | null;
+        count?: number | null;
+      }>,
+    ),
+  ]);
+  if (shows.error) {
+    return { ok: false, error: libraryFailure(shows.error) };
+  }
+  if (movies.error) {
+    return { ok: false, error: libraryFailure(movies.error) };
+  }
+  if (episodes.error) {
+    return { ok: false, error: libraryFailure(episodes.error) };
+  }
+  return {
+    ok: true,
+    data: {
+      shows: shows.data.flatMap((row) => {
+        const show = mapShow(row);
+        return show ? [show] : [];
+      }),
+      movies: movies.data.flatMap((row) => {
+        const movie = mapMovie(row);
+        return movie ? [movie] : [];
+      }),
+      episodes: episodes.data.map(mapRow),
+    },
+  };
+}
+
+type KeyRow = { show_tmdb_id: number; season_number: number; episode_number: number; watched_at: string };
+type TimeRow = { show_tmdb_id: number; runtime_minutes: number | null; watched_at: string };
+
+/** The Profile page: lists and counts need which episodes, and when; not names or notes. */
+export function loadProfileLibrary(userId: string) {
+  return loadLibraryWith(
+    userId,
+    "show_tmdb_id, season_number, episode_number, watched_at",
+    (row: KeyRow) => ({
+      showTmdbId: row.show_tmdb_id,
+      seasonNumber: row.season_number,
+      episodeNumber: row.episode_number,
+      watchedAt: row.watched_at,
+    }),
+  );
+}
+
+/** Insights: hours and dates per episode. */
+export function loadInsightsLibrary(userId: string) {
+  return loadLibraryWith(
+    userId,
+    "show_tmdb_id, runtime_minutes, watched_at",
+    (row: TimeRow) => ({
+      showTmdbId: row.show_tmdb_id,
+      runtimeMinutes: row.runtime_minutes,
+      watchedAt: row.watched_at,
+    }),
+  );
+}
+
 /**
  * What Up next needs: tracked shows, and which episodes are watched.
  * Only three episode columns, so a long history loads fast.
