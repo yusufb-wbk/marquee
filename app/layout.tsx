@@ -4,7 +4,7 @@ import { Fraunces, Geist } from "next/font/google";
 
 import { PwaRegister } from "@/components/pwa-register";
 import { SignedInNav } from "@/components/signed-in-nav";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { SignedInImport } from "@/components/signed-in-import";
 
 import "./globals.css";
 
@@ -17,15 +17,6 @@ const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-fraunces",
 });
-
-const themeScript = `(() => {
-  try {
-    const match = document.cookie.match(/(?:^|; )theme=(light|dark)(?:;|$)/);
-    if (match) document.documentElement.dataset.theme = match[1];
-  } catch {
-    /* keep the dark theme */
-  }
-})();`;
 
 export const metadata = {
   title: {
@@ -55,7 +46,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-background text-foreground">
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <div className="grid min-h-dvh grid-rows-[auto_1fr] pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
           <header className="border-b border-line">
             <div className="marquee-rail" aria-hidden="true" />
@@ -63,7 +53,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <Link href="/up-next" className="font-display text-2xl tracking-tight">
                 Marquee
               </Link>
-              <ThemeToggle />
+              <Suspense fallback={null}>
+                <SignedInImport />
+              </Suspense>
             </div>
           </header>
           <main id="main" className="mx-auto w-full max-w-6xl px-4 py-6 lg:px-8">

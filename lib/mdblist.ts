@@ -36,10 +36,12 @@ async function fetchRatingsCached(kind: "movie" | "tv", tmdbId: number): Promise
   }
   const url = new URL(`https://api.mdblist.com/tmdb/${kind === "tv" ? "show" : "movie"}/${tmdbId}`);
   url.searchParams.set("apikey", key);
-  const response = await fetch(url, {
-    headers: { accept: "application/json" },
-    signal: AbortSignal.timeout(8000),
-  });
+  let response = await fetchOnce(url);
+  if (response.status === 503 || response.status === 429) {
+    // MDBList turns away bursts; one short wait is usually enough.
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    response = await fetchOnce(url);
+  }
   if (response.status === 404) {
     return { score: null, ratings: [] };
   }
@@ -48,4 +50,11 @@ async function fetchRatingsCached(kind: "movie" | "tv", tmdbId: number): Promise
     throw new Error(`MDBList answered ${response.status}`);
   }
   return parseMdblist(await response.json(), kind);
+}
+
+function fetchOnce(url: URL): Promise<Response> {
+  return fetch(url, {
+    headers: { accept: "application/json" },
+    signal: AbortSignal.timeout(8000),
+  });
 }

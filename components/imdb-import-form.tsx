@@ -214,7 +214,7 @@ export function ImdbImportForm({ csrf }: { csrf: string }) {
       onSubmit={onSubmit}
     >
       <input type="hidden" name="csrf" value={csrf} />
-      <input type="hidden" name="next" value="/import" />
+      <input type="hidden" name="next" value="/import/imdb" />
       <input ref={cursorRef} type="hidden" name="cursor" defaultValue="0" />
       <label
         htmlFor="imdb-file"

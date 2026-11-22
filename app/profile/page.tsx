@@ -90,10 +90,8 @@ async function ProfileScreen({ searchParams }: PageProps) {
           }}
           watchlist={
             <div className="grid gap-4">
-              <Link href="/import?list=watchlist" className="text-sm font-semibold text-accent">
-                Import from IMDb
-              </Link>
               <LibraryShelf
+                csrf={csrf}
                 watchlist={showTitles(library.data.shows, "watchlist")}
                 paused={showTitles(library.data.shows, "stopped")}
                 toWatch={library.data.movies
@@ -110,9 +108,6 @@ async function ProfileScreen({ searchParams }: PageProps) {
           }
           watched={
             <div className="grid gap-4">
-              <Link href="/import?list=watched" className="text-sm font-semibold text-accent">
-                Import from IMDb
-              </Link>
               <WatchedBrowser csrf={csrf} titles={watched} />
             </div>
           }

@@ -94,19 +94,19 @@ export function ChevronLeftIcon({ className }: IconProps) {
   );
 }
 
-export function SunIcon({ className }: IconProps) {
+export function ImportIcon({ className }: IconProps) {
   return (
     <Svg className={className}>
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M4.8 4.8l1.6 1.6M17.6 17.6l1.6 1.6M19.2 4.8 17.6 6.4M6.4 17.6 4.8 19.2" />
+      <path d="M12 3.5v11M7.5 10l4.5 4.5 4.5-4.5" />
+      <path d="M4.5 15.5v2.5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-2.5" />
     </Svg>
   );
 }
 
-export function MoonIcon({ className }: IconProps) {
+export function TrashIcon({ className }: IconProps) {
   return (
     <Svg className={className}>
-      <path d="M16 3.2A8.2 8.2 0 1 0 20.8 14 6.4 6.4 0 0 1 16 3.2Z" />
+      <path d="M4.5 7h15M10 11v6M14 11v6M6.5 7l.8 11.2a2 2 0 0 0 2 1.8h5.4a2 2 0 0 0 2-1.8L17.5 7M9.5 7V5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2" />
     </Svg>
   );
 }
