@@ -67,6 +67,10 @@ export type Episode = {
   overview: string;
   airDate: string | null;
   runtime: number | null;
+  /** A frame from the episode, 16:9. */
+  stillUrl: string | null;
+  /** TMDB's audience score, 0–10, when enough people have rated it. */
+  score: number | null;
 };
 
 export type TvSeason = {

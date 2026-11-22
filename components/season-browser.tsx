@@ -12,6 +12,7 @@ import type { Episode, SeasonSummary } from "@/lib/tmdb/types";
 type WatchRef = {
   seasonNumber: number;
   episodeNumber: number;
+  watchedAt?: string;
 };
 
 function isEpisode(value: unknown): value is Episode {
@@ -25,13 +26,20 @@ function isEpisode(value: unknown): value is Episode {
     typeof episode.name === "string" &&
     typeof episode.overview === "string" &&
     (episode.airDate === null || typeof episode.airDate === "string") &&
-    (episode.runtime === null || typeof episode.runtime === "number")
+    (episode.runtime === null || typeof episode.runtime === "number") &&
+    (episode.stillUrl === undefined || episode.stillUrl === null || typeof episode.stillUrl === "string") &&
+    (episode.score === undefined || episode.score === null || typeof episode.score === "number")
   );
 }
 
 function parseSeasonPayload(
   value: unknown,
-): { name: string; episodes: Episode[]; watched: number[] } | null {
+): {
+  name: string;
+  episodes: Episode[];
+  watched: number[];
+  watchedDates: Record<string, string>;
+} | null {
   if (typeof value !== "object" || value === null) {
     return null;
   }
@@ -45,7 +53,15 @@ function parseSeasonPayload(
   const watched = Array.isArray(body.watched)
     ? body.watched.filter((item): item is number => typeof item === "number")
     : [];
-  return { name: body.name, episodes: body.episodes, watched };
+  const watchedDates: Record<string, string> = {};
+  if (typeof body.watchedDates === "object" && body.watchedDates !== null) {
+    for (const [episode, date] of Object.entries(body.watchedDates as Record<string, unknown>)) {
+      if (typeof date === "string") {
+        watchedDates[episode] = date;
+      }
+    }
+  }
+  return { name: body.name, episodes: body.episodes, watched, watchedDates };
 }
 
 function mergeSeason(
@@ -95,6 +111,36 @@ export function SeasonBrowser({
     () => new Set(initialWatched.map((episode) => episodeKey(episode))),
   );
   const [tracked, setTracked] = useState(showTracked);
+  // When each watched episode was watched, by episode key.
+  const [watchedDates, setWatchedDates] = useState<Record<string, string>>(() => {
+    const dates: Record<string, string> = {};
+    for (const episode of initialWatched) {
+      if (episode.watchedAt) {
+        dates[episodeKey(episode)] = episode.watchedAt;
+      }
+    }
+    return dates;
+  });
+
+  /** Updates the watched set; newly marked episodes are dated today. */
+  function changeWatched(next: Set<string>) {
+    const now = new Date().toISOString();
+    setWatchedDates((current) => {
+      const dates = { ...current };
+      for (const key of next) {
+        if (!dates[key]) {
+          dates[key] = now;
+        }
+      }
+      for (const key of Object.keys(dates)) {
+        if (!next.has(key)) {
+          delete dates[key];
+        }
+      }
+      return dates;
+    });
+    setWatched(next);
+  }
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const nextPath = `/tv/${showId}?season=${seasonNumber}`;
@@ -133,6 +179,13 @@ export function SeasonBrowser({
     setSeasonName(season.name);
     setEpisodes(season.episodes);
     setWatched((current) => mergeSeason(current, nextSeason, season.watched));
+    setWatchedDates((current) => {
+      const dates = { ...current };
+      for (const [episode, date] of Object.entries(season.watchedDates)) {
+        dates[`${nextSeason}:${episode}`] = date;
+      }
+      return dates;
+    });
     window.history.replaceState(null, "", `/tv/${showId}?season=${nextSeason}`);
   }
 
@@ -234,10 +287,11 @@ export function SeasonBrowser({
                       seasonName={seasonName}
                       episodes={episodes}
                       watchedKeys={watched}
+                      watchedDates={watchedDates}
                       showTracked={tracked}
                       nextPath={nextPath}
                       today={today}
-                      onWatched={setWatched}
+                      onWatched={changeWatched}
                       onTracked={() => {
                         setTracked(true);
                       }}

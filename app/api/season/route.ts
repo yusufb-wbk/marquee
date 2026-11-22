@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const watches = await supabase
     .from("episode_watches")
-    .select("episode_number")
+    .select("episode_number, watched_at")
     .eq("user_id", auth.user.id)
     .eq("show_tmdb_id", showId)
     .eq("season_number", seasonNumber);
@@ -38,11 +38,19 @@ export async function GET(request: NextRequest) {
   const watched = watches.error
     ? []
     : watches.data.map((row) => row.episode_number);
+  // When each episode was watched, for the "✓ 1 Apr 2026" line.
+  const watchedDates: Record<number, string> = {};
+  for (const row of watches.error ? [] : watches.data) {
+    if (typeof row.watched_at === "string") {
+      watchedDates[row.episode_number] = row.watched_at;
+    }
+  }
 
   return Response.json({
     ok: true,
     name: season.data.name,
     episodes: season.data.episodes,
     watched,
+    watchedDates,
   });
 }

@@ -96,6 +96,10 @@ function posterUrl(path: string | null): string | null {
   return `https://image.tmdb.org/t/p/${POSTER_SIZE}${path}`;
 }
 
+function stillUrl(path: string | null): string | null {
+  return path ? `https://image.tmdb.org/t/p/w300${path}` : null;
+}
+
 function backdropUrl(path: string | null): string | null {
   if (!path) {
     return null;
@@ -300,6 +304,15 @@ function parseEpisode(value: unknown): Episode | null {
     overview: readText(value.overview),
     airDate: readDate(value.air_date),
     runtime: readRuntime(value.runtime),
+    stillUrl: stillUrl(readPosterPath(value.still_path)),
+    // A score from one or two votes says little, so it needs a few before it shows.
+    score:
+      typeof value.vote_average === "number" &&
+      value.vote_average > 0 &&
+      typeof value.vote_count === "number" &&
+      value.vote_count >= 3
+        ? Math.round(value.vote_average * 10) / 10
+        : null,
   };
 }
 
