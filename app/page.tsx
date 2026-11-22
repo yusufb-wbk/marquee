@@ -82,22 +82,33 @@ async function SearchResults({
 }
 
 async function DiscoverRows() {
-  const [trending, shows, movies] = await Promise.all([
-    listTrending(),
+  const [movies, shows, popularShows, popularMovies] = await Promise.all([
+    listTrending("movie"),
+    listTrending("tv"),
     listPopular("tv"),
     listPopular("movie"),
   ]);
-  const rows: { title: string; result: TmdbResult<SearchTitle[]> }[] = [
-    { title: "Trending this week", result: trending },
-    { title: "Popular shows", result: shows },
-    { title: "Popular movies", result: movies },
+  const rows: {
+    title: string;
+    href?: string;
+    result: TmdbResult<SearchTitle[]>;
+  }[] = [
+    { title: "Trending movies", href: "/trending/movies", result: movies },
+    { title: "Trending shows", href: "/trending/shows", result: shows },
+    { title: "Popular shows", result: popularShows },
+    { title: "Popular movies", result: popularMovies },
   ];
 
   return (
     <div className="grid gap-8">
       {rows.map((row) =>
         row.result.ok ? (
-          <PosterRail key={row.title} title={row.title} titles={row.result.data} />
+          <PosterRail
+            key={row.title}
+            title={row.title}
+            titles={row.result.data}
+            href={row.href}
+          />
         ) : (
           <Message key={row.title} tone="error" title={row.title}>
             {row.result.error.message}

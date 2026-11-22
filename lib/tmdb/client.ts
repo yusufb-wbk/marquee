@@ -300,25 +300,51 @@ async function getTvSeasonCached(
   return season;
 }
 
-export async function listTrending(): Promise<TmdbResult<SearchTitle[]>> {
+const TRENDING_CAP = 50;
+
+export async function listTrending(
+  mediaType: MediaType,
+  pages = 1,
+): Promise<TmdbResult<SearchTitle[]>> {
   await connection();
   const blocked = gateTmdb();
   if (blocked) {
     return { ok: false, error: blocked };
   }
-  return runCached(() => listTrendingCached());
+  const count = pages > 1 ? 3 : 1;
+  return runCached(() => listTrendingCached(mediaType, count));
 }
 
-async function listTrendingCached(): Promise<SearchTitle[]> {
+async function listTrendingCached(
+  mediaType: MediaType,
+  pages: number,
+): Promise<SearchTitle[]> {
   "use cache";
   cacheLife("hours");
 
-  const body = await tmdbGet("/trending/all/week", { language: "en-US" });
-  const titles = parseSearchResults(body);
-  if (!titles) {
-    raiseTmdb(failure("bad_response"));
+  const collected: SearchTitle[] = [];
+  const seen = new Set<number>();
+  for (let page = 1; page <= pages; page += 1) {
+    const body = await tmdbGet(`/trending/${mediaType}/week`, {
+      language: "en-US",
+      page: String(page),
+    });
+    const titles = parseSearchResults(body, mediaType);
+    if (!titles) {
+      raiseTmdb(failure("bad_response"));
+    }
+    for (const title of titles) {
+      if (seen.has(title.id)) {
+        continue;
+      }
+      seen.add(title.id);
+      collected.push(title);
+      if (collected.length === TRENDING_CAP) {
+        return collected;
+      }
+    }
   }
-  return titles;
+  return collected;
 }
 
 export async function listPopular(

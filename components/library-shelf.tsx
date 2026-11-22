@@ -1,10 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 
+import { FilterRow } from "@/components/trending-browser";
 import { ChevronLeftIcon } from "@/components/icons";
 import { TitleLink } from "@/components/title-link";
+import {
+  catalogGenres,
+  catalogYears,
+  EMPTY_CATALOG,
+  filterCatalog,
+  isCatalogRating,
+  isCatalogSort,
+  type CatalogQuery,
+} from "@/lib/catalog";
 
 export type ShelfTitle = {
   id: number;
@@ -14,6 +24,9 @@ export type ShelfTitle = {
   meta: string;
   genres: string[];
   rating: string | null;
+  year: string | null;
+  score: number | null;
+  kind: "movie" | "tv";
 };
 
 export function LibraryShelf({
@@ -27,29 +40,69 @@ export function LibraryShelf({
   paused: ShelfTitle[];
   toWatch: ShelfTitle[];
 }) {
-  const [side, setSide] = useState<"shows" | "movies">("shows");
+  const [kind, setKind] = useState<"all" | "tv" | "movie">("all");
+  const [query, setQuery] = useState<CatalogQuery>(EMPTY_CATALOG);
+  const saved = useMemo(
+    () =>
+      [...watchlist, ...toWatch].map((title) => ({
+        title: title.title,
+        year: title.year,
+        genres: title.genres,
+        rating: title.score,
+        kind: title.kind,
+        source: title,
+      })),
+    [watchlist, toWatch],
+  );
+  const typed = useMemo(
+    () => saved.filter((title) => kind === "all" || title.kind === kind),
+    [saved, kind],
+  );
+  const genres = useMemo(() => catalogGenres(typed), [typed]);
+  const years = useMemo(() => catalogYears(typed), [typed]);
+  const visible = useMemo(() => filterCatalog(typed, query), [typed, query]);
+
+  function update(patch: Partial<{ text: string; genre: string; year: string; rating: string; sort: string }>) {
+    setQuery((current) => ({
+      text: patch.text ?? current.text,
+      genre: patch.genre ?? current.genre,
+      year: patch.year ?? current.year,
+      rating: patch.rating !== undefined && isCatalogRating(patch.rating) ? patch.rating : current.rating,
+      sort: patch.sort !== undefined && isCatalogSort(patch.sort) ? patch.sort : current.sort,
+    }));
+  }
 
   return (
     <div className="grid gap-6">
-      <div className="grid grid-cols-2 gap-2" role="tablist" aria-label="Library">
-        <TabButton
-          selected={side === "shows"}
-          onSelect={() => {
-            setSide("shows");
-          }}
-          label="Shows"
-        />
-        <TabButton
-          selected={side === "movies"}
-          onSelect={() => {
-            setSide("movies");
-          }}
-          label="Movies"
-        />
-      </div>
-      {side === "shows" ? (
+      <FilterRow
+        query={query}
+        genres={genres}
+        years={years}
+        onChange={update}
+        onClear={() => {
+          setKind("all");
+          setQuery(EMPTY_CATALOG);
+        }}
+        count={visible.length}
+        total={saved.length}
+        type={{
+          value: kind,
+          onChange: (value) => {
+            if (value === "all" || value === "tv" || value === "movie") {
+              setKind(value);
+            }
+          },
+        }}
+      />
+      {saved.length === 0 ? (
+        <p className="text-sm text-muted">Nothing is on your watchlist.</p>
+      ) : visible.length === 0 ? (
+        <p className="text-sm text-muted">Nothing matches these filters.</p>
+      ) : (
+        <TitleList titles={visible.map((title) => title.source)} />
+      )}
+      {kind !== "movie" ? (
         <div className="grid gap-8">
-          <OpenGroup title="Shows" titles={watchlist} empty="No shows on your watchlist." />
           {ended.length > 0 ? (
             <Link
               href="/profile/ended"
@@ -72,11 +125,7 @@ export function LibraryShelf({
             </details>
           ) : null}
         </div>
-      ) : (
-        <div className="grid gap-8">
-          <OpenGroup title="Movies" titles={toWatch} empty="No movies on your watchlist." />
-        </div>
-      )}
+      ) : null}
       <Link href="/" className="text-sm font-semibold text-accent">
         Search for a title
       </Link>
@@ -84,61 +133,11 @@ export function LibraryShelf({
   );
 }
 
-function TabButton({
-  selected,
-  onSelect,
-  label,
-}: {
-  selected: boolean;
-  onSelect: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={selected}
-      onClick={onSelect}
-      className={
-        selected
-          ? "inline-flex h-12 items-center justify-center rounded-full bg-accent text-sm font-semibold text-accent-ink"
-          : "inline-flex h-12 items-center justify-center rounded-full border border-line text-sm font-semibold"
-      }
-    >
-      {label}
-    </button>
-  );
-}
-
-function OpenGroup({
-  title,
-  titles,
-  empty,
-}: {
-  title: string;
-  titles: ShelfTitle[];
-  empty: string;
-}) {
-  if (titles.length === 0 && empty.length === 0) {
-    return null;
-  }
-  return (
-    <section className="grid gap-3">
-      <h2 className="font-display text-2xl">{title}</h2>
-      {titles.length === 0 ? (
-        <p className="text-sm text-muted">{empty}</p>
-      ) : (
-        <TitleList titles={titles} />
-      )}
-    </section>
-  );
-}
-
 function TitleList({ titles }: { titles: ShelfTitle[] }) {
   return (
     <ul className="grid gap-3 lg:grid-cols-2">
       {titles.map((title) => (
-        <li key={title.id}>
+        <li key={`${title.kind}-${title.id}`}>
           <TitleLink
             href={title.href}
             title={title.title}

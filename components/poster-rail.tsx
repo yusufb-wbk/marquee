@@ -7,9 +7,11 @@ import type { SearchTitle } from "@/lib/tmdb/types";
 export function PosterRail({
   title,
   titles,
+  href,
 }: {
   title: string;
   titles: SearchTitle[];
+  href?: string;
 }) {
   if (titles.length === 0) {
     return null;
@@ -19,7 +21,12 @@ export function PosterRail({
     <section className="grid gap-3">
       <div className="flex items-center gap-3">
         <span className="h-6 w-1 rounded-full bg-accent" aria-hidden="true" />
-        <h2 className="font-display text-2xl tracking-tight">{title}</h2>
+        <h2 className="min-w-0 flex-1 font-display text-2xl tracking-tight">{title}</h2>
+        {href ? (
+          <Link href={href} className="text-sm font-semibold text-accent">
+            View all
+          </Link>
+        ) : null}
       </div>
       <ul className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {titles.map((item) => {

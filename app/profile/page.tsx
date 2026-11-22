@@ -15,7 +15,7 @@ import { firstQueryValue } from "@/lib/format";
 import type { ShowStatus } from "@/lib/library/database";
 import type { TrackedMovie, TrackedShow } from "@/lib/library/queries";
 import { loadLibrary } from "@/lib/library/queries";
-import { userRatingLabel } from "@/lib/rating";
+import { ratingToDisplay, userRatingLabel } from "@/lib/rating";
 import { requireUser } from "@/lib/require-user";
 import { buildWatchedTitles } from "@/lib/watched";
 
@@ -48,7 +48,23 @@ async function ProfileScreen({ searchParams }: PageProps) {
         <h1 className="font-display text-4xl tracking-tight">Profile</h1>
         {user.email ? <p className="truncate text-sm text-muted">{user.email}</p> : null}
       </header>
-      <ProfileTabs tab={tab} />
+      <ProfileTabs
+        tab={tab}
+        counts={
+          library.ok
+            ? {
+                watchlist:
+                  library.data.shows.filter((show) => show.status === "watchlist").length +
+                  library.data.movies.filter((movie) => movie.status === "watchlist").length,
+                watched: buildWatchedTitles({
+                  shows: library.data.shows,
+                  movies: library.data.movies,
+                  episodes: library.data.episodes,
+                }).length,
+              }
+            : null
+        }
+      />
       <LibraryNotice code={code} />
       {!library.ok && library.error === "schema" ? <SchemaSetup /> : null}
       {!library.ok && library.error !== "schema" ? (
@@ -121,6 +137,9 @@ function showTitles(shows: TrackedShow[], status: ShowStatus): ShelfTitle[] {
       meta: "",
       genres: show.genres.slice(0, 2),
       rating: userRatingLabel(show.rating),
+      year: show.year,
+      score: show.rating === null ? null : ratingToDisplay(show.rating),
+      kind: "tv",
     }));
 }
 
@@ -133,5 +152,8 @@ function movieTitle(movie: TrackedMovie): ShelfTitle {
     meta: "",
     genres: movie.genres.slice(0, 2),
     rating: userRatingLabel(movie.rating),
+    year: movie.year,
+    score: movie.rating === null ? null : ratingToDisplay(movie.rating),
+    kind: "movie",
   };
 }
