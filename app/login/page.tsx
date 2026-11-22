@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { LoginForm } from "@/app/login/login-form";
 import { CsrfField } from "@/components/csrf-field";
 import { authAlert } from "@/app/login/messages";
+import { GoogleIcon } from "@/components/icons";
 import { Message } from "@/components/message";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { SetupPanel } from "@/components/setup-panel";
@@ -69,8 +70,9 @@ async function LoginGate({ searchParams }: LoginPageProps) {
           <CsrfField />
           <button
             type="submit"
-            className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-line px-4 text-base font-semibold"
+            className="inline-flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#747775] bg-white px-4 text-base font-medium text-[#1f1f1f]"
           >
+            <GoogleIcon className="h-5 w-5" />
             Continue with Google
           </button>
         </form>
