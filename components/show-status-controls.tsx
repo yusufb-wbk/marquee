@@ -83,56 +83,60 @@ export function ShowStatusControls({
     <form
       action="/library/show"
       method="post"
-      className="grid max-w-lg gap-3 rounded-3xl border border-line bg-card p-4 sm:p-5 lg:max-w-none"
+      // A container: the card lays itself out by its own width, so it works full width
+      // on tablets and in the narrow side column on wide screens.
+      className="@container grid w-full gap-3 rounded-3xl border border-line bg-card p-4 sm:p-5"
       onSubmit={onSubmit}
     >
       <input type="hidden" name="csrf" value={csrf} />
       <input type="hidden" name="tmdbId" value={showId} />
       <input type="hidden" name="next" value={nextPath} />
-      <RatingField
-        key={`${ratingVersion}:${committedRating ?? "none"}`}
-        stored={committedRating}
-        submit={{
-          name: "status",
-          value: status ?? "watching",
-          action: "rating",
-          pending: pending !== null,
-          persistRemove: status !== null,
-        }}
-      />
-      <div className={finished ? "grid grid-cols-2 gap-2" : "grid grid-cols-3 gap-2"}>
-        {OPTIONS.filter((option) => !finished || option.status !== "stopped").map((option) => {
-          const selected =
-            option.status === "watching"
-              ? status === "watching" || (finished && status === "stopped")
-              : status === option.status;
-          // "Stop" is an action until the show is stopped; then it names the state.
-          const label =
-            finished && option.status === "watching"
-              ? "Watched"
-              : option.status === "stopped" && selected
-                ? "Stopped"
-                : option.label;
-          return (
-            <button
-              key={option.status}
-              type="submit"
-              name="status"
-              value={option.status}
-              aria-pressed={selected}
-              disabled={pending !== null}
-              className={
-                selected
-                  ? "grid min-h-16 content-center justify-items-center gap-1 rounded-2xl bg-accent px-2 py-2 text-xs font-semibold text-accent-ink disabled:opacity-60"
-                  : "grid min-h-16 content-center justify-items-center gap-1 rounded-2xl border border-line px-2 py-2 text-xs font-semibold disabled:opacity-60"
-              }
-            >
-              {/* Each state keeps its own icon; the filled button shows which one is current. */}
-              <option.Icon className="h-5 w-5" />
-              {pending === option.status ? "Saving…" : label}
-            </button>
-          );
-        })}
+      <div className="grid gap-3 @2xl:grid-cols-[auto_minmax(0,1fr)] @2xl:items-center @2xl:gap-5">
+        <RatingField
+          key={`${ratingVersion}:${committedRating ?? "none"}`}
+          stored={committedRating}
+          submit={{
+            name: "status",
+            value: status ?? "watching",
+            action: "rating",
+            pending: pending !== null,
+            persistRemove: status !== null,
+          }}
+        />
+        <div className={finished ? "grid grid-cols-2 gap-2" : "grid grid-cols-3 gap-2"}>
+          {OPTIONS.filter((option) => !finished || option.status !== "stopped").map((option) => {
+            const selected =
+              option.status === "watching"
+                ? status === "watching" || (finished && status === "stopped")
+                : status === option.status;
+            // "Stop" is an action until the show is stopped; then it names the state.
+            const label =
+              finished && option.status === "watching"
+                ? "Watched"
+                : option.status === "stopped" && selected
+                  ? "Stopped"
+                  : option.label;
+            return (
+              <button
+                key={option.status}
+                type="submit"
+                name="status"
+                value={option.status}
+                aria-pressed={selected}
+                disabled={pending !== null}
+                className={
+                  selected
+                    ? "grid min-h-16 content-center justify-items-center gap-1 rounded-2xl bg-accent px-2 py-2 text-xs font-semibold text-accent-ink disabled:opacity-60"
+                    : "grid min-h-16 content-center justify-items-center gap-1 rounded-2xl border border-line px-2 py-2 text-xs font-semibold disabled:opacity-60"
+                }
+              >
+                {/* Each state keeps its own icon; the filled button shows which one is current. */}
+                <option.Icon className="h-5 w-5" />
+                {pending === option.status ? "Saving…" : label}
+              </button>
+            );
+          })}
+        </div>
       </div>
       {status ? (
         <button
@@ -140,7 +144,7 @@ export function ShowStatusControls({
           name="status"
           value="remove"
           disabled={pending !== null}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl text-sm font-medium text-muted disabled:opacity-60"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl text-sm font-medium text-muted disabled:opacity-60 @2xl:justify-self-end @2xl:px-3"
         >
           <CloseIcon className="h-4 w-4" />
           {pending === "remove" ? "Saving…" : "Remove from my list"}

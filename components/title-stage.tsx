@@ -3,6 +3,19 @@ import Image from "next/image";
 import { CollapsibleText } from "@/components/collapsible-text";
 import { Poster } from "@/components/poster";
 
+export type StageBanner = {
+  tone: "ended" | "live" | "cancelled" | "soon";
+  label: string;
+  detail: string | null;
+};
+
+const BANNER_TONE: Record<StageBanner["tone"], { strip: string; dot: string }> = {
+  ended: { strip: "text-foreground", dot: "bg-muted" },
+  live: { strip: "text-foreground", dot: "bg-accent" },
+  cancelled: { strip: "text-danger", dot: "bg-danger" },
+  soon: { strip: "text-foreground", dot: "bg-notice" },
+};
+
 export function TitleStage({
   kind,
   title,
@@ -11,7 +24,9 @@ export function TitleStage({
   facts,
   genres,
   overview,
+  banner,
 }: {
+  banner?: StageBanner | null;
   kind: string;
   title: string;
   posterUrl: string | null;
@@ -33,6 +48,15 @@ export function TitleStage({
             className="object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/92 to-background/55" />
+        </div>
+      ) : null}
+      {banner ? (
+        <div
+          className={`relative flex flex-wrap items-center gap-x-2 gap-y-0.5 border-b border-line/70 bg-background/70 px-4 py-2.5 text-sm backdrop-blur-sm sm:px-6 ${BANNER_TONE[banner.tone].strip}`}
+        >
+          <span aria-hidden="true" className={`size-2 rounded-full ${BANNER_TONE[banner.tone].dot}`} />
+          <span className="font-semibold">{banner.label}</span>
+          {banner.detail ? <span className="text-muted">· {banner.detail}</span> : null}
         </div>
       ) : null}
       <div className="relative flex items-start gap-4 p-4 sm:gap-6 sm:p-6">

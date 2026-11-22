@@ -8,7 +8,7 @@ import { LibraryNotice } from "@/components/library-notice";
 import { Message } from "@/components/message";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { SchemaSetup } from "@/components/schema-setup";
-import { TitleStage } from "@/components/title-stage";
+import { TitleStage, type StageBanner } from "@/components/title-stage";
 import { SeasonBrowser } from "@/components/season-browser";
 import { SeasonNav } from "@/components/season-nav";
 import { ShowStatusForm } from "@/components/show-status-form";
@@ -16,6 +16,7 @@ import { isoDateUTC } from "@/lib/calendar";
 import { seriesFinished } from "@/lib/progress";
 import {
   firstQueryValue,
+  formatAirDate,
   parsePositiveInt,
   parseSeasonNumber,
 } from "@/lib/format";
@@ -118,7 +119,10 @@ async function TvScreen({ params, searchParams }: TvPageProps) {
                 seasons={show.seasons}
                 season={active}
                 watches={progress.data.episodes}
-                showTracked={progress.data.show !== null}
+                showTracked={
+                  // A watchlist show is not started yet: the first watched episode moves it to Watching.
+                  progress.data.show !== null && progress.data.show.status !== "watchlist"
+                }
               />
             </Suspense>
           ) : active ? (
@@ -154,7 +158,8 @@ function chooseSeason(
 }
 
 function ShowHeader({ show }: { show: TvShow }) {
-  const facts = [show.year, show.status].filter((fact): fact is string => Boolean(fact));
+  // The airing state gets its own banner, so only the year stays in the facts line.
+  const facts = [show.year].filter((fact): fact is string => Boolean(fact));
 
   return (
     <div className="lg:col-start-1 lg:row-start-1">
@@ -166,9 +171,50 @@ function ShowHeader({ show }: { show: TvShow }) {
         facts={facts}
         genres={show.genres}
         overview={titleOverview(show.overview)}
+        banner={showBanner(show, isoDateUTC(new Date()))}
       />
     </div>
   );
+}
+
+/** One line about where the show stands: ended, still airing, cancelled or not out yet. */
+function showBanner(show: TvShow, today: string): StageBanner | null {
+  const regular = show.seasons.filter((season) => season.seasonNumber > 0);
+  const episodes = regular.reduce((sum, season) => sum + season.episodeCount, 0);
+  const count =
+    episodes > 0 ? `${episodes} episode${episodes === 1 ? "" : "s"}` : null;
+  const status = (show.status ?? "").toLowerCase();
+
+  if (status === "ended") {
+    return {
+      tone: "ended",
+      label: "Ended",
+      detail: count ? (episodes === 1 ? "1 episode" : `All ${count} are out`) : null,
+    };
+  }
+  if (status === "canceled" || status === "cancelled") {
+    return { tone: "cancelled", label: "Cancelled", detail: count };
+  }
+  if (status === "returning series") {
+    const next = show.nextEpisode;
+    const when = next ? formatAirDate(next.airDate) : null;
+    return {
+      tone: "live",
+      label: "Returning",
+      detail:
+        next && when
+          ? `S${next.seasonNumber} E${next.episodeNumber} ${next.airDate && next.airDate <= today ? "out" : "on"} ${when}`
+          : "No date for the next episode yet",
+    };
+  }
+  if (status === "in production" || status === "planned" || status === "pilot") {
+    return {
+      tone: "soon",
+      label: status === "in production" ? "In production" : "Coming soon",
+      detail: null,
+    };
+  }
+  return null;
 }
 
 async function TrackedSeason({
