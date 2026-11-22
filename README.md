@@ -56,6 +56,6 @@ npm run build
 npm start
 ```
 
-Ratings are stored as whole numbers from 1 to 20 and shown divided by 2, so the screen offers 0.5 to 10 in half steps. A title shows that score, or "Not rated", and the stars open from it. "Up next" skips specials and leaves out a show once every listed episode is watched; it comes back when a new episode is listed. "Watched up to here" marks earlier regular episodes and stops at the one you tapped. Watched has filters for type, genre, year, and your rating, and a rating can be set on that list.
+Ratings are stored as whole numbers from 1 to 20 and shown divided by 2, so the screen offers 0.5 to 10 in half steps. A title shows that score, or "Not rated", and the stars open from it. "Up next" skips specials and leaves out a show once every listed episode is watched; it comes back when a new episode is listed. The old Soon calendar is that same queue. "Watched up to here" marks earlier regular episodes and stops at the one you tapped. Watched includes hours, top genres, filters, and a rating on each title.
 
 On a phone, add Marquee to the home screen from the browser share sheet. Use the Light button in the header to switch themes.

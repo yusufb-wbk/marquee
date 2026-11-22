@@ -5,6 +5,7 @@ import { readCsrfToken } from "@/components/csrf-field";
 import { LibraryNotice } from "@/components/library-notice";
 import { Message } from "@/components/message";
 import { SchemaSetup } from "@/components/schema-setup";
+import { WatchStats } from "@/components/watch-stats";
 import { WatchedBrowser } from "@/components/watched-browser";
 import { firstQueryValue } from "@/lib/format";
 import { loadLibrary } from "@/lib/library/queries";
@@ -37,7 +38,7 @@ async function WatchedScreen({ searchParams }: PageProps) {
       <header className="grid gap-2">
         <h1 className="font-display text-4xl tracking-tight">Watched</h1>
         <p className="leading-7 text-muted">
-          Filter everything you have watched by type, genre, year, and your rating.
+          Hours, genres, and everything you have watched, with filters for type, year, and your rating.
         </p>
         <Link href="/import" className="text-sm font-semibold text-accent">
           Import from IMDb
@@ -49,6 +50,13 @@ async function WatchedScreen({ searchParams }: PageProps) {
         <Message tone="error" title="Your watched list could not be loaded">
           Try again in a moment.
         </Message>
+      ) : null}
+      {library.ok ? (
+        <WatchStats
+          shows={library.data.shows}
+          movies={library.data.movies}
+          episodes={library.data.episodes}
+        />
       ) : null}
       {library.ok ? (
         <WatchedBrowser

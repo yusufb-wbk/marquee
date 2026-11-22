@@ -100,6 +100,32 @@ export function MoonIcon({ className }: IconProps) {
   );
 }
 
+export function PlayIcon({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <path d="M8 6.2v11.6l10-5.8L8 6.2Z" />
+    </Svg>
+  );
+}
+
+export function SearchIcon({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <circle cx="11" cy="11" r="6" />
+      <path d="m16 16 4.2 4.2" />
+    </Svg>
+  );
+}
+
+export function CompassIcon({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <circle cx="12" cy="12" r="8" />
+      <path d="m14.8 9.2-1.2 4.4-4.4 1.2 1.2-4.4 4.4-1.2Z" />
+    </Svg>
+  );
+}
+
 export function PersonIcon({ className }: IconProps) {
   return (
     <Svg className={className}>

@@ -58,7 +58,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full bg-background text-foreground">
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-        <div className="grid min-h-dvh grid-rows-[auto_1fr_auto] pb-20">
+        <div className="grid min-h-dvh grid-rows-[auto_1fr_auto] pb-28">
           <header className="border-b border-line">
             <div className="marquee-rail" aria-hidden="true" />
             <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 px-4 py-4">
