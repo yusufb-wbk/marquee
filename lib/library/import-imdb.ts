@@ -443,7 +443,7 @@ async function loadShowState(
   const watched = await selectAllPages((from, to) =>
     supabase
       .from("episode_watches")
-      .select("show_tmdb_id")
+      .select("show_tmdb_id", { count: "exact" })
       .eq("user_id", userId)
       .order("show_tmdb_id")
       .range(from, to),

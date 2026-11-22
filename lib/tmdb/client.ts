@@ -310,7 +310,7 @@ export async function searchTitles(
 }
 
 async function searchTitlesCached(query: string): Promise<SearchTitle[]> {
-  "use cache";
+  "use cache: remote";
   cacheLife("minutes");
 
   const body = await tmdbGet("/search/multi", {
@@ -335,7 +335,7 @@ export async function getTvShow(id: number): Promise<TmdbResult<TvShow>> {
 }
 
 async function getTvShowCached(id: number): Promise<TvShow> {
-  "use cache";
+  "use cache: remote";
   cacheLife("hours");
 
   const body = await tmdbGet(`/tv/${id}`, { language: "en-US" });
@@ -362,7 +362,7 @@ async function getTvSeasonCached(
   id: number,
   seasonNumber: number,
 ): Promise<TvSeason> {
-  "use cache";
+  "use cache: remote";
   cacheLife("hours");
 
   const body = await tmdbGet(`/tv/${id}/season/${seasonNumber}`, {
@@ -394,7 +394,7 @@ async function listTrendingCached(
   mediaType: MediaType,
   pages: number,
 ): Promise<SearchTitle[]> {
-  "use cache";
+  "use cache: remote";
   cacheLife("hours");
 
   const collected: SearchTitle[] = [];
@@ -434,7 +434,7 @@ export async function listPopular(
 }
 
 async function listPopularCached(mediaType: MediaType): Promise<SearchTitle[]> {
-  "use cache";
+  "use cache: remote";
   cacheLife("hours");
 
   const path = mediaType === "tv" ? "/tv/popular" : "/movie/popular";
@@ -459,7 +459,7 @@ export async function findByImdbId(imdbId: string): Promise<TmdbResult<ImdbFind>
 }
 
 async function findByImdbCached(imdbId: string): Promise<ImdbFind> {
-  "use cache";
+  "use cache: remote";
   cacheLife("hours");
 
   const body = await tmdbGet(
@@ -484,7 +484,7 @@ export async function getMovie(id: number): Promise<TmdbResult<Movie>> {
 }
 
 async function getMovieCached(id: number): Promise<Movie> {
-  "use cache";
+  "use cache: remote";
   cacheLife("hours");
 
   const body = await tmdbGet(`/movie/${id}`, { language: "en-US" });

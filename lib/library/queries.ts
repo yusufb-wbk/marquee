@@ -156,15 +156,45 @@ const PAGE_SIZE = 1000;
 /**
  * Supabase returns at most 1000 rows per request. Reads every page.
  * `page` must apply a stable order so rows do not shift between pages.
+ * Ask for `{ count: "exact" }` in the select: with a count, the remaining pages
+ * are fetched in parallel instead of one after another.
  */
 export async function selectAllPages<T>(
   page: (
     from: number,
     to: number,
-  ) => PromiseLike<{ data: T[] | null; error: { code?: string; message: string } | null }>,
+  ) => PromiseLike<{
+    data: T[] | null;
+    error: { code?: string; message: string } | null;
+    count?: number | null;
+  }>,
 ): Promise<{ data: T[]; error: null } | { data: null; error: { code?: string; message: string } }> {
-  const rows: T[] = [];
-  for (let from = 0; ; from += PAGE_SIZE) {
+  const first = await page(0, PAGE_SIZE - 1);
+  if (first.error) {
+    return { data: null, error: first.error };
+  }
+  const rows: T[] = [...(first.data ?? [])];
+  if (rows.length < PAGE_SIZE) {
+    return { data: rows, error: null };
+  }
+
+  if (typeof first.count === "number") {
+    const starts: number[] = [];
+    for (let from = PAGE_SIZE; from < first.count; from += PAGE_SIZE) {
+      starts.push(from);
+    }
+    const pages = await Promise.all(starts.map((from) => page(from, from + PAGE_SIZE - 1)));
+    for (const result of pages) {
+      if (result.error) {
+        return { data: null, error: result.error };
+      }
+      rows.push(...(result.data ?? []));
+    }
+    return { data: rows, error: null };
+  }
+
+  // No count: read page by page until a short page.
+  for (let from = PAGE_SIZE; ; from += PAGE_SIZE) {
     const result = await page(from, from + PAGE_SIZE - 1);
     if (result.error) {
       return { data: null, error: result.error };
@@ -256,7 +286,7 @@ export async function loadLibrary(userId: string): Promise<
     selectAllPages((from, to) =>
       supabase
         .from("episode_watches")
-        .select(EPISODE_COLUMNS)
+        .select(EPISODE_COLUMNS, { count: "exact" })
         .eq("user_id", userId)
         .order("show_tmdb_id")
         .order("season_number")
@@ -291,6 +321,52 @@ export async function loadLibrary(userId: string): Promise<
   };
 }
 
+/**
+ * What Up next needs: tracked shows, and which episodes are watched.
+ * Only three episode columns, so a long history loads fast.
+ */
+export async function loadUpNextLibrary(userId: string): Promise<
+  LibraryResult<{
+    shows: TrackedShow[];
+    episodes: { showTmdbId: number; seasonNumber: number; episodeNumber: number }[];
+  }>
+> {
+  const supabase = await client();
+  const [shows, episodes] = await Promise.all([
+    loadShowRows(supabase, userId),
+    selectAllPages((from, to) =>
+      supabase
+        .from("episode_watches")
+        .select("show_tmdb_id, season_number, episode_number", { count: "exact" })
+        .eq("user_id", userId)
+        .order("show_tmdb_id")
+        .order("season_number")
+        .order("episode_number")
+        .range(from, to),
+    ),
+  ]);
+  if (shows.error) {
+    return { ok: false, error: libraryFailure(shows.error) };
+  }
+  if (episodes.error) {
+    return { ok: false, error: libraryFailure(episodes.error) };
+  }
+  return {
+    ok: true,
+    data: {
+      shows: shows.data.flatMap((row) => {
+        const show = mapShow(row);
+        return show ? [show] : [];
+      }),
+      episodes: episodes.data.map((row) => ({
+        showTmdbId: row.show_tmdb_id,
+        seasonNumber: row.season_number,
+        episodeNumber: row.episode_number,
+      })),
+    },
+  };
+}
+
 export async function loadShowProgress(
   userId: string,
   tmdbId: number,
@@ -301,7 +377,7 @@ export async function loadShowProgress(
     selectAllPages((from, to) =>
       supabase
         .from("episode_watches")
-        .select(EPISODE_COLUMNS)
+        .select(EPISODE_COLUMNS, { count: "exact" })
         .eq("user_id", userId)
         .eq("show_tmdb_id", tmdbId)
         .order("season_number")

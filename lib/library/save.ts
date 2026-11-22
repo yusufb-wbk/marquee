@@ -492,21 +492,34 @@ function toMarked(seasonNumber: number, episode: Episode): MarkedEpisode {
   };
 }
 
+/**
+ * Marking an episode watched means you are watching the show: add it as Watching,
+ * or move it off the watchlist. A stopped show stays stopped, since that was a choice.
+ */
 async function ensureWatchingShow(userId: string, showId: number): Promise<Saved> {
   const supabase = await createClient();
   const existing = await supabase
     .from("tracked_shows")
-    .select("tmdb_id")
+    .select("status")
     .eq("user_id", userId)
     .eq("tmdb_id", showId)
     .maybeSingle();
   if (existing.error) {
     return { ok: false, error: libraryFailure(existing.error) };
   }
-  if (existing.data) {
+  if (!existing.data) {
+    return saveShowStatus(userId, showId, "watching");
+  }
+  if (existing.data.status !== "watchlist") {
     return { ok: true, data: true };
   }
-  return saveShowStatus(userId, showId, "watching");
+  // Status only, so the show's rating and snapshot stay as they are.
+  const moved = await supabase
+    .from("tracked_shows")
+    .update({ status: "watching", updated_at: new Date().toISOString() })
+    .eq("user_id", userId)
+    .eq("tmdb_id", showId);
+  return savedOr(moved.error);
 }
 
 export type MarkAllResult =
@@ -571,7 +584,7 @@ async function insertNewWatches(
   const existing = await selectAllPages((from, to) =>
     supabase
       .from("episode_watches")
-      .select("season_number, episode_number")
+      .select("season_number, episode_number", { count: "exact" })
       .eq("user_id", userId)
       .eq("show_tmdb_id", showId)
       .order("season_number")
