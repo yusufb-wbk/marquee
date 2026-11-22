@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function StatsPage() {
-  redirect("/watched");
+  redirect("/profile?tab=insights");
 }
