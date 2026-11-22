@@ -23,7 +23,7 @@ export function ProfileTabs({
   counts: { watchlist: number; watched: number } | null;
 }) {
   return (
-    <div role="tablist" aria-label="Profile" className="grid grid-cols-3 gap-2">
+    <div role="tablist" aria-label="Profile" className="grid grid-cols-3 gap-1 rounded-2xl bg-card p-1">
       {PROFILE_TABS.map((item) => {
         const selected = item.id === tab;
         const count = item.id === "insights" ? null : counts?.[item.id] ?? null;
@@ -35,14 +35,12 @@ export function ProfileTabs({
             aria-selected={selected}
             className={
               selected
-                ? "grid h-14 content-center justify-items-center rounded-full bg-accent text-sm font-semibold text-accent-ink"
-                : "grid h-14 content-center justify-items-center rounded-full border border-line text-sm font-semibold"
+                ? "flex h-11 min-w-0 items-center justify-center gap-2 rounded-xl bg-accent px-2 text-sm font-semibold text-accent-ink"
+                : "flex h-11 min-w-0 items-center justify-center gap-2 rounded-xl px-2 text-sm font-semibold"
             }
           >
-            <span>{item.label}</span>
-            {count === null ? null : (
-              <span className="text-xs tabular-nums">{count}</span>
-            )}
+            <span className="truncate">{item.label}</span>
+            {count === null ? null : <span className="tabular-nums">{count}</span>}
           </Link>
         );
       })}

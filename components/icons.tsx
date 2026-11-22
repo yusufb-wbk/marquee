@@ -119,6 +119,14 @@ export function PlayIcon({ className }: IconProps) {
   );
 }
 
+export function FilterIcon({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <path d="M4 6h16M7 12h10M10 18h4" />
+    </Svg>
+  );
+}
+
 export function SearchIcon({ className }: IconProps) {
   return (
     <Svg className={className}>

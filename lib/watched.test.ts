@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { buildWatchedTitles, filterWatched, type WatchedQuery } from "./watched.ts";
+import { buildWatchedTitles, filterWatched, groupByRating, type WatchedQuery } from "./watched.ts";
 
 const query: WatchedQuery = {
   kind: "all",
@@ -76,5 +76,16 @@ describe("watched list", () => {
     assert.deepEqual(crime.map((title) => title.title), ["Breaking Bad"]);
     const named = filterWatched(titles, { ...query, text: "incep" });
     assert.deepEqual(named.map((title) => title.title), ["Inception"]);
+  });
+
+  it("groups a rating sort into one section per score", () => {
+    const ranked = filterWatched(titles, { ...query, sort: "rating" });
+    assert.deepEqual(
+      groupByRating(ranked).map((group) => [group.label, group.titles.map((title) => title.title)]),
+      [
+        ["9/10", ["Breaking Bad"]],
+        ["8/10", ["Inception"]],
+      ],
+    );
   });
 });

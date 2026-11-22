@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { Fraunces, Geist } from "next/font/google";
 
-import { AccountMenu } from "@/components/account-menu";
 import { PwaRegister } from "@/components/pwa-register";
 import { SignedInNav } from "@/components/signed-in-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -58,19 +57,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full bg-background text-foreground">
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-        <div className="grid min-h-dvh grid-rows-[auto_1fr_auto] pb-28">
+        <div className="grid min-h-dvh grid-rows-[auto_1fr_auto] pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
           <header className="border-b border-line">
             <div className="marquee-rail" aria-hidden="true" />
             <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-4">
               <Link href="/up-next" className="font-display text-2xl tracking-tight">
                 Marquee
               </Link>
-              <div className="flex items-center gap-2">
-                <ThemeToggle />
-                <Suspense fallback={<div className="h-11 w-24" />}>
-                  <AccountMenu />
-                </Suspense>
-              </div>
+              <ThemeToggle />
             </div>
           </header>
           <main id="main" className="mx-auto w-full max-w-6xl px-4 py-6 lg:px-8">

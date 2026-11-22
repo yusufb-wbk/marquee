@@ -7,6 +7,7 @@ import { FilterRow } from "@/components/trending-browser";
 import { WatchedRating } from "@/components/watched-rating";
 import {
   filterWatched,
+  groupByRating,
   type WatchedQuery,
   type WatchedTitle,
 } from "@/lib/watched";
@@ -41,6 +42,10 @@ export function WatchedBrowser({
     return [...values].sort((left, right) => right.localeCompare(left));
   }, [catalog]);
   const visible = useMemo(() => filterWatched(catalog, query), [catalog, query]);
+  const groups = useMemo(
+    () => (query.sort === "rating" ? groupByRating(visible) : null),
+    [query.sort, visible],
+  );
 
   function update(patch: Partial<WatchedQuery>) {
     setQuery((current) => ({ ...current, ...patch }));
@@ -111,51 +116,88 @@ export function WatchedBrowser({
         </p>
       ) : visible.length === 0 ? (
         <p className="text-muted">Nothing matches these filters.</p>
-      ) : (
-        <ul className="grid gap-3 lg:grid-cols-2">
-          {visible.map((title) => (
-            <li
-              key={`${title.kind}-${title.id}`}
-              className="flex gap-3 rounded-2xl border border-line bg-card p-3"
-            >
-              <Link
-                href={title.kind === "tv" ? `/tv/${title.id}` : `/movie/${title.id}`}
-                className="shrink-0"
-              >
-                <Poster src={title.posterUrl} title={title.title} />
-              </Link>
-              <div className="grid min-w-0 gap-2">
-                <Link
-                  href={title.kind === "tv" ? `/tv/${title.id}` : `/movie/${title.id}`}
-                  className="grid gap-1"
-                >
-                  <span className="font-display text-xl leading-tight">{title.title}</span>
-                  <span className="text-sm text-muted">
-                    {[title.year, title.detail, ...title.genres.slice(0, 3)]
-                      .filter((part): part is string => Boolean(part))
-                      .join(" · ")}
-                  </span>
-                </Link>
-                <WatchedRating
-                  csrf={csrf}
-                  kind={title.kind}
-                  id={title.id}
-                  stored={title.rating}
-                  onRated={(rating) => {
-                    setCatalog((current) =>
-                      current.map((item) =>
-                        item.kind === title.kind && item.id === title.id
-                          ? { ...item, rating }
-                          : item,
-                      ),
-                    );
-                  }}
-                />
-              </div>
-            </li>
+      ) : groups ? (
+        <div className="grid gap-6">
+          {groups.map((group) => (
+            <section key={group.label} className="grid gap-3">
+              <h2 className="font-display text-2xl">{group.label}</h2>
+              <WatchedList
+                titles={group.titles}
+                csrf={csrf}
+                onRated={(kind, id, rating) => {
+                  setCatalog((current) =>
+                    current.map((item) =>
+                      item.kind === kind && item.id === id ? { ...item, rating } : item,
+                    ),
+                  );
+                }}
+              />
+            </section>
           ))}
-        </ul>
+        </div>
+      ) : (
+        <WatchedList
+          titles={visible}
+          csrf={csrf}
+          onRated={(kind, id, rating) => {
+            setCatalog((current) =>
+              current.map((item) =>
+                item.kind === kind && item.id === id ? { ...item, rating } : item,
+              ),
+            );
+          }}
+        />
       )}
     </div>
+  );
+}
+
+function WatchedList({
+  titles,
+  csrf,
+  onRated,
+}: {
+  titles: WatchedTitle[];
+  csrf: string;
+  onRated: (kind: WatchedTitle["kind"], id: number, rating: number | null) => void;
+}) {
+  return (
+    <ul className="grid gap-3 lg:grid-cols-2">
+      {titles.map((title) => (
+        <li
+          key={`${title.kind}-${title.id}`}
+          className="flex gap-3 rounded-2xl border border-line bg-card p-3"
+        >
+          <Link
+            href={title.kind === "tv" ? `/tv/${title.id}` : `/movie/${title.id}`}
+            className="shrink-0"
+          >
+            <Poster src={title.posterUrl} title={title.title} />
+          </Link>
+          <div className="grid min-w-0 gap-2">
+            <Link
+              href={title.kind === "tv" ? `/tv/${title.id}` : `/movie/${title.id}`}
+              className="grid gap-1"
+            >
+              <span className="font-display text-xl leading-tight">{title.title}</span>
+              <span className="text-sm text-muted">
+                {[title.year, title.detail, ...title.genres.slice(0, 3)]
+                  .filter((part): part is string => Boolean(part))
+                  .join(" · ")}
+              </span>
+            </Link>
+            <WatchedRating
+              csrf={csrf}
+              kind={title.kind}
+              id={title.id}
+              stored={title.rating}
+              onRated={(rating) => {
+                onRated(title.kind, title.id, rating);
+              }}
+            />
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }

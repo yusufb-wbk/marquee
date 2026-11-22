@@ -36,21 +36,21 @@ export function AppNav() {
   return (
     <nav
       aria-label="Sections"
-      className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-background pb-[env(safe-area-inset-bottom)]"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-background pb-[env(safe-area-inset-bottom)]"
     >
-      <ul className="mx-auto flex w-full max-w-6xl gap-1 px-2 py-1.5 lg:px-6">
+      <ul className="mx-auto grid w-full max-w-6xl grid-cols-3">
         {LINKS.map((link) => {
           const current = isCurrent(pathname, link.href);
           const Icon = link.Icon;
           return (
-            <li key={link.href} className="flex-1">
+            <li key={link.href} className="min-w-0">
               <Link
                 href={link.href}
                 aria-current={current ? "page" : undefined}
                 className={
                   current
-                    ? "grid min-h-[4.75rem] w-full content-center justify-items-center gap-1 rounded-2xl bg-card text-accent"
-                    : "grid min-h-[4.75rem] w-full content-center justify-items-center gap-1 rounded-2xl text-muted"
+                    ? "grid h-16 content-center justify-items-center gap-1 text-accent"
+                    : "grid h-16 content-center justify-items-center gap-1 text-muted"
                 }
               >
                 <Icon className="h-6 w-6" />

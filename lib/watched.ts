@@ -152,6 +152,27 @@ function compareWatched(
   return (right.watchedOn ?? "").localeCompare(left.watchedOn ?? "") || left.title.localeCompare(right.title);
 }
 
+export function groupByRating(
+  titles: readonly WatchedTitle[],
+): { label: string; titles: WatchedTitle[] }[] {
+  const groups: { label: string; titles: WatchedTitle[] }[] = [];
+  for (const title of titles) {
+    const label = ratingHeading(title.rating);
+    const last = groups[groups.length - 1];
+    if (last && last.label === label) {
+      last.titles.push(title);
+    } else {
+      groups.push({ label, titles: [title] });
+    }
+  }
+  return groups;
+}
+
+function ratingHeading(stored: number | null): string {
+  const label = watchedRatingLabel(stored);
+  return label === "No rating" ? "Not rated" : label;
+}
+
 export function watchedRatingLabel(stored: number | null): string {
   if (stored === null || !Number.isInteger(stored) || stored < 1 || stored > 20) {
     return "No rating";

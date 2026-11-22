@@ -37,6 +37,7 @@ export default function ProfilePage({ searchParams }: PageProps) {
 
 async function ProfileScreen({ searchParams }: PageProps) {
   const user = await requireUser();
+  const csrf = await readCsrfToken();
   const library = await loadLibrary(user.id);
   const params = await searchParams;
   const tab = profileTab(firstQueryValue(params.tab));
@@ -44,9 +45,20 @@ async function ProfileScreen({ searchParams }: PageProps) {
 
   return (
     <div className="grid gap-6">
-      <header className="grid gap-1">
-        <h1 className="font-display text-4xl tracking-tight">Profile</h1>
-        {user.email ? <p className="truncate text-sm text-muted">{user.email}</p> : null}
+      <header className="flex items-end justify-between gap-3">
+        <div className="grid min-w-0 gap-1">
+          <h1 className="font-display text-4xl tracking-tight">Profile</h1>
+          {user.email ? <p className="truncate text-sm text-muted">{user.email}</p> : null}
+        </div>
+        <form action="/auth/signout" method="post">
+          {csrf.length > 0 ? <input type="hidden" name="csrf" value={csrf} /> : null}
+          <button
+            type="submit"
+            className="inline-flex h-11 items-center rounded-full border border-line px-4 text-sm font-semibold"
+          >
+            Sign out
+          </button>
+        </form>
       </header>
       <ProfileTabs
         tab={tab}
@@ -85,7 +97,7 @@ async function ProfileScreen({ searchParams }: PageProps) {
             Import from IMDb
           </Link>
           <WatchedBrowser
-            csrf={await readCsrfToken()}
+            csrf={csrf}
             titles={buildWatchedTitles({
               shows: library.data.shows,
               movies: library.data.movies,
