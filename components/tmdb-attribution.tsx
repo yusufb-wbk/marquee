@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export function TmdbAttribution() {
   return (
-    <div className="grid gap-3 sm:justify-items-end">
+    <div className="grid justify-items-center gap-3">
       <a
         href="https://www.themoviedb.org/"
         target="_blank"
@@ -17,7 +17,7 @@ export function TmdbAttribution() {
           unoptimized
         />
       </a>
-      <p className="max-w-sm text-xs leading-5 text-muted sm:text-right">
+      <p className="max-w-sm text-center text-xs leading-5 text-muted">
         This product uses the TMDB API but is not endorsed or certified by
         TMDB.
       </p>
