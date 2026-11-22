@@ -32,12 +32,14 @@ export function ShowStatusControls({
   current,
   rating,
   nextPath,
+  finished,
 }: {
   csrf: string;
   showId: number;
   current: ShowStatus | null;
   rating: number | null;
   nextPath: string;
+  finished: boolean;
 }) {
   const [status, setStatus] = useState(current);
   const [committedRating, setCommittedRating] = useState(rating);
@@ -99,9 +101,13 @@ export function ShowStatusControls({
           persistRemove: status !== null,
         }}
       />
-      <div className="grid grid-cols-3 gap-2">
-        {OPTIONS.map((option) => {
-          const selected = status === option.status;
+      <div className={finished ? "grid grid-cols-2 gap-2" : "grid grid-cols-3 gap-2"}>
+        {OPTIONS.filter((option) => !finished || option.status !== "stopped").map((option) => {
+          const label = finished && option.status === "watching" ? "Watched" : option.label;
+          const selected =
+            option.status === "watching"
+              ? status === "watching" || (finished && status === "stopped")
+              : status === option.status;
           return (
             <button
               key={option.status}
@@ -117,7 +123,7 @@ export function ShowStatusControls({
               }
             >
               {selected ? <CheckIcon className="h-5 w-5" /> : <option.Icon className="h-5 w-5" />}
-              {pending === option.status ? "Saving…" : option.label}
+              {pending === option.status ? "Saving…" : label}
             </button>
           );
         })}

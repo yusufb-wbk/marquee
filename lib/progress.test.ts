@@ -7,6 +7,7 @@ import {
   episodesUpTo,
   isSeasonComplete,
   nextEpisode,
+  seriesFinished,
   type EpisodeRef,
 } from "./progress.ts";
 
@@ -85,6 +86,25 @@ describe("watched up to here", () => {
       applyWatchChange(upTo, "unwatch", season[0]!, season).has("1:1"),
       false,
     );
+  });
+
+  it("treats an ended series as finished only when every regular episode is watched", () => {
+    const seasons = [
+      { seasonNumber: 0, episodeCount: 2 },
+      { seasonNumber: 1, episodeCount: 2 },
+    ];
+    const watched = [
+      { seasonNumber: 1, episodeNumber: 1 },
+      { seasonNumber: 1, episodeNumber: 2 },
+    ];
+    assert.equal(seriesFinished("Ended", seasons, watched), true);
+    assert.equal(seriesFinished("Canceled", seasons, watched), true);
+    assert.equal(
+      seriesFinished("Ended", seasons, watched.slice(0, 1)),
+      false,
+    );
+    assert.equal(seriesFinished("Returning Series", seasons, watched), false);
+    assert.equal(seriesFinished("Ended", [], watched), false);
   });
 
   it("marks only the special that was tapped", () => {

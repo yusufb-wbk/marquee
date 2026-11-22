@@ -7,11 +7,13 @@ export async function ShowStatusForm({
   current,
   rating,
   nextPath,
+  finished,
 }: {
   showId: number;
   current: ShowStatus | null;
   rating: number | null;
   nextPath: string;
+  finished: boolean;
 }) {
   const csrf = await readCsrfToken();
   return (
@@ -21,6 +23,7 @@ export async function ShowStatusForm({
       current={current}
       rating={rating}
       nextPath={nextPath}
+      finished={finished}
     />
   );
 }

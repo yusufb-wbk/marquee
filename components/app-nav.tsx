@@ -3,18 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { CompassIcon, PersonIcon, PlayIcon, SearchIcon } from "@/components/icons";
+import { PersonIcon, PlayIcon, SearchIcon } from "@/components/icons";
 
 const LINKS = [
   { href: "/up-next", label: "Next", Icon: PlayIcon },
   { href: "/", label: "Search", Icon: SearchIcon },
-  { href: "/discover", label: "Discover", Icon: CompassIcon },
   { href: "/profile", label: "Profile", Icon: PersonIcon },
 ] as const;
 
 function isCurrent(pathname: string, href: string): boolean {
   if (href === "/") {
-    return pathname === "/";
+    return pathname === "/" || pathname === "/discover";
   }
   if (href === "/up-next") {
     return pathname === "/up-next" || pathname === "/upcoming";

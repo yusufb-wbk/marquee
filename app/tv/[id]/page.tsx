@@ -13,6 +13,7 @@ import { SeasonBrowser } from "@/components/season-browser";
 import { SeasonNav } from "@/components/season-nav";
 import { ShowStatusForm } from "@/components/show-status-form";
 import { isoDateUTC } from "@/lib/calendar";
+import { seriesFinished } from "@/lib/progress";
 import {
   firstQueryValue,
   parsePositiveInt,
@@ -91,6 +92,11 @@ async function TvScreen({ params, searchParams }: TvPageProps) {
               current={progress.ok ? (progress.data.show?.status ?? null) : null}
               rating={progress.ok ? (progress.data.show?.rating ?? null) : null}
               nextPath={nextPath}
+              finished={seriesFinished(
+                show.status,
+                show.seasons,
+                progress.ok ? progress.data.episodes : [],
+              )}
             />
           </div>
         ) : null}

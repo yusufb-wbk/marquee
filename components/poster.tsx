@@ -7,12 +7,14 @@ export function Poster({
 }: {
   src: string | null;
   title: string;
-  size?: "small" | "large";
+  size?: "small" | "large" | "rail";
 }) {
   const frame =
     size === "large"
       ? "w-36 sm:w-48"
-      : "w-16 shrink-0 sm:w-20";
+      : size === "rail"
+        ? "w-full"
+        : "w-16 shrink-0 sm:w-20";
 
   if (!src) {
     return (

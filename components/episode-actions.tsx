@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type MouseEvent, type PointerEvent } from "react";
+import { useRef, useState, type PointerEvent } from "react";
 
 import {
   CheckIcon,
@@ -84,7 +84,6 @@ function WatchedRow({ pending }: { pending: WatchIntent | null }) {
   const [reveal, setReveal] = useState(PEEK);
   const [open, setOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [leaving, setLeaving] = useState(false);
   const gesture = useRef({ x: 0, y: 0, base: PEEK, tracking: false, reveal: PEEK });
   const dragged = useRef(false);
   const busy = pending !== null;
@@ -138,42 +137,26 @@ function WatchedRow({ pending }: { pending: WatchIntent | null }) {
     setReveal(nextOpen ? OPEN : PEEK);
   }
 
-  function onUnwatchClick(event: MouseEvent<HTMLButtonElement>) {
-    if (dragged.current) {
-      event.preventDefault();
-      dragged.current = false;
-      return;
-    }
-    if (leaving || busy) {
-      event.preventDefault();
-      return;
-    }
-    if (reduceMotion()) {
-      return;
-    }
-    event.preventDefault();
-    setLeaving(true);
-    const form = event.currentTarget.form;
-    const button = event.currentTarget;
-    window.setTimeout(() => {
-      form?.requestSubmit(button);
-    }, 280);
-  }
-
   return (
-    <div className="relative overflow-hidden sm:overflow-visible">
+    <div className="relative overflow-hidden">
       <button
         type="submit"
         name="intent"
         value="unwatch"
         disabled={busy}
         aria-label="Mark as not watched"
-        className="absolute inset-y-0 right-0 inline-flex w-[4.75rem] items-center justify-center rounded-xl border border-line text-sm font-semibold text-muted disabled:opacity-60 sm:hidden"
+        onClick={(event) => {
+          if (dragged.current) {
+            event.preventDefault();
+            dragged.current = false;
+          }
+        }}
+        className="absolute inset-y-0 right-0 inline-flex w-[4.75rem] items-center justify-center rounded-xl border border-line text-sm font-semibold text-muted disabled:opacity-60"
       >
         <EyeOffIcon className="h-6 w-6" />
       </button>
       <div
-        className={`relative flex items-center gap-3 bg-background sm:!translate-x-0 ${
+        className={`relative flex items-center gap-3 bg-background ${
           dragging ? "" : "transition-transform duration-300 ease-out motion-reduce:transition-none"
         }`}
         style={{ transform: `translateX(-${shown}px)` }}
@@ -183,35 +166,24 @@ function WatchedRow({ pending }: { pending: WatchIntent | null }) {
         onPointerCancel={onPointerUp}
       >
         <button
-          type="submit"
-          name="intent"
-          value="unwatch"
+          type="button"
           disabled={busy}
-          onClick={onUnwatchClick}
-          className={leaving ? `${watchedBar} opacity-70` : watchedBar}
+          onClick={() => {
+            if (dragged.current) {
+              dragged.current = false;
+              return;
+            }
+            setOpen((current) => !current);
+          }}
+          className={watchedBar}
         >
           <span className="flex items-center gap-3">
-            <CheckIcon
-              className={`h-7 w-7 transition-transform duration-300 ${leaving ? "scale-50 -rotate-12" : ""}`}
-            />
+            <CheckIcon className="h-7 w-7" />
             <span className="text-base font-semibold">
-              {pending === "unwatch" ? "Saving…" : "Mark as not watched"}
+              {pending === "unwatch" ? "Saving…" : "Watched"}
             </span>
           </span>
-          <span className={`sm:hidden ${leaving ? "opacity-0" : ""}`}>
-            <ChevronLeftIcon className="h-5 w-5" />
-          </span>
-        </button>
-        <button
-          type="submit"
-          name="intent"
-          value="unwatch"
-          disabled={busy}
-          aria-label="Mark as not watched"
-          title="Mark as not watched"
-          className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-line text-muted disabled:opacity-60 sm:inline-flex"
-        >
-          <EyeOffIcon className="h-5 w-5" />
+          <ChevronLeftIcon className={`h-5 w-5 ${open ? "rotate-180" : ""}`} />
         </button>
       </div>
     </div>

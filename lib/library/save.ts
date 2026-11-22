@@ -216,13 +216,14 @@ export async function saveMovieStatus(
   return savedOr(written.error);
 }
 
-type EpisodeIntent = "watch" | "unwatch" | "season" | "upto" | "save";
+type EpisodeIntent = "watch" | "unwatch" | "season" | "earlier" | "upto" | "save";
 
 function isEpisodeIntent(value: string): value is EpisodeIntent {
   return (
     value === "watch" ||
     value === "unwatch" ||
     value === "season" ||
+    value === "earlier" ||
     value === "upto" ||
     value === "save"
   );
@@ -297,7 +298,7 @@ export async function saveEpisode(
     return inserted;
   }
 
-  if (intent === "season") {
+  if (intent === "season" || intent === "earlier") {
     return { ok: true, data: true };
   }
 
@@ -341,10 +342,13 @@ async function episodesForIntent(
   showId: number,
   seasonNumber: number,
   episodeNumber: number,
-  intent: "watch" | "season" | "upto",
+  intent: "watch" | "season" | "earlier" | "upto",
 ): Promise<LibraryResult<MarkedEpisode[]>> {
   if (intent === "season") {
     return loadSeasonEpisodes(showId, seasonNumber, null);
+  }
+  if (intent === "earlier") {
+    return loadThroughSeason(showId, seasonNumber);
   }
   if (intent === "watch") {
     const season = await loadSeasonEpisodes(showId, seasonNumber, episodeNumber);
@@ -398,6 +402,31 @@ async function episodesForIntent(
     return { ok: false, error: "missing" };
   }
   return { ok: true, data: marked };
+}
+
+async function loadThroughSeason(
+  showId: number,
+  seasonNumber: number,
+): Promise<LibraryResult<MarkedEpisode[]>> {
+  const show = await getTvShow(showId);
+  if (!show.ok) {
+    return { ok: false, error: show.error.kind === "not_found" ? "missing" : "save" };
+  }
+  const collected: MarkedEpisode[] = [];
+  for (const season of show.data.seasons) {
+    if (season.seasonNumber === 0 || season.seasonNumber > seasonNumber) {
+      continue;
+    }
+    const loaded = await loadSeasonEpisodes(showId, season.seasonNumber, null);
+    if (!loaded.ok) {
+      return loaded;
+    }
+    collected.push(...loaded.data);
+  }
+  if (collected.length === 0) {
+    return { ok: false, error: "missing" };
+  }
+  return { ok: true, data: collected };
 }
 
 async function loadSeasonEpisodes(

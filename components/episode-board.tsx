@@ -22,7 +22,8 @@ function isWatchIntent(value: string): value is WatchIntent {
     value === "watch" ||
     value === "unwatch" ||
     value === "upto" ||
-    value === "season"
+    value === "season" ||
+    value === "earlier"
   );
 }
 
@@ -113,33 +114,18 @@ export function EpisodeBoard({
           </p>
         </div>
         {episodes.length > 0 ? (
-          <form
-            action="/library/episode"
-            method="post"
-            className="w-full sm:w-auto"
+          <SeasonWatch
+            csrf={csrf}
+            showId={showId}
+            seasonNumber={seasonNumber}
+            episodeNumber={episodes[0]?.episodeNumber ?? 1}
+            nextPath={nextPath}
+            complete={complete}
+            pending={pendingKey === "season"}
             onSubmit={(event) => {
               void onSubmit(event, "season");
             }}
-          >
-            <input type="hidden" name="csrf" value={csrf} />
-            <input type="hidden" name="showId" value={showId} />
-            <input type="hidden" name="season" value={seasonNumber} />
-            <input type="hidden" name="episode" value={episodes[0]?.episodeNumber ?? 1} />
-            <input type="hidden" name="next" value={nextPath} />
-            <button
-              type="submit"
-              name="intent"
-              value="season"
-              disabled={pendingKey !== null || complete}
-              className="inline-flex h-11 w-full items-center justify-center rounded-full border border-line px-4 text-sm font-semibold disabled:opacity-60 sm:w-auto"
-            >
-              {pendingKey === "season"
-                ? "Saving…"
-                : complete
-                  ? "Season watched"
-                  : "Mark season watched"}
-            </button>
-          </form>
+          />
         ) : (
           <p className="text-muted">This season has no episodes listed yet.</p>
         )}
@@ -205,5 +191,92 @@ export function EpisodeBoard({
         })}
       </ol>
     </section>
+  );
+}
+
+function SeasonWatch({
+  csrf,
+  showId,
+  seasonNumber,
+  episodeNumber,
+  nextPath,
+  complete,
+  pending,
+  onSubmit,
+}: {
+  csrf: string;
+  showId: number;
+  seasonNumber: number;
+  episodeNumber: number;
+  nextPath: string;
+  complete: boolean;
+  pending: boolean;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const earlier = seasonNumber > 1;
+  const choice =
+    "inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold disabled:opacity-60";
+
+  return (
+    <form
+      action="/library/episode"
+      method="post"
+      className="w-full sm:w-auto"
+      onSubmit={onSubmit}
+    >
+      <input type="hidden" name="csrf" value={csrf} />
+      <input type="hidden" name="showId" value={showId} />
+      <input type="hidden" name="season" value={seasonNumber} />
+      <input type="hidden" name="episode" value={episodeNumber} />
+      <input type="hidden" name="next" value={nextPath} />
+      {complete ? (
+        <button
+          type="button"
+          disabled
+          className="inline-flex h-11 w-full items-center justify-center rounded-full border border-line px-4 text-sm font-semibold opacity-60 sm:w-auto"
+        >
+          Season watched
+        </button>
+      ) : open && earlier ? (
+        <div className="grid gap-2 sm:grid-cols-2">
+          <button
+            type="submit"
+            name="intent"
+            value="season"
+            disabled={pending}
+            className={`${choice} bg-accent text-accent-ink`}
+          >
+            {pending ? "Saving…" : "This season"}
+          </button>
+          <button
+            type="submit"
+            name="intent"
+            value="earlier"
+            disabled={pending}
+            className={`${choice} border border-line`}
+          >
+            {pending ? "Saving…" : "Earlier seasons too"}
+          </button>
+        </div>
+      ) : (
+        <button
+          type={earlier ? "button" : "submit"}
+          name={earlier ? undefined : "intent"}
+          value={earlier ? undefined : "season"}
+          disabled={pending}
+          onClick={
+            earlier
+              ? () => {
+                  setOpen(true);
+                }
+              : undefined
+          }
+          className="inline-flex h-11 w-full items-center justify-center rounded-full border border-line px-4 text-sm font-semibold disabled:opacity-60 sm:w-auto"
+        >
+          {pending ? "Saving…" : "Mark season watched"}
+        </button>
+      )}
+    </form>
   );
 }

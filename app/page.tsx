@@ -3,12 +3,14 @@ import type { Metadata } from "next";
 
 import { Message } from "@/components/message";
 import { PageSkeleton } from "@/components/page-skeleton";
+import { PosterRail } from "@/components/poster-rail";
 import { ResultList } from "@/components/result-list";
 import { SearchForm } from "@/components/search-form";
 import { firstQueryValue } from "@/lib/format";
 import { requireUser } from "@/lib/require-user";
 import { normalizeSearchQuery } from "@/lib/search-query";
-import { searchTitles } from "@/lib/tmdb/client";
+import { listPopular, listTrending, searchTitles } from "@/lib/tmdb/client";
+import type { SearchTitle, TmdbResult } from "@/lib/tmdb/types";
 
 export const metadata: Metadata = {
   title: "Search",
@@ -33,13 +35,8 @@ async function SearchScreen({ searchParams }: HomePageProps) {
   const query = normalizeSearchQuery(raw);
 
   return (
-    <div className="grid gap-6">
-      <header className="grid gap-2">
-        <h1 className="font-display text-4xl tracking-tight">Find a title</h1>
-        <p className="leading-7 text-muted">
-          Search for a show or a movie, then add it to your list.
-        </p>
-      </header>
+    <div className="grid gap-8">
+      <h1 className="font-display text-4xl tracking-tight">Search</h1>
       <SearchForm key={raw} query={query ?? raw} />
       {query === null && raw.length > 0 ? (
         <Message tone="error" title="That search cannot be sent">
@@ -49,7 +46,9 @@ async function SearchScreen({ searchParams }: HomePageProps) {
         <Suspense fallback={<PageSkeleton kind="results" />}>
           <SearchResults query={query} userId={user.id} />
         </Suspense>
-      ) : null}
+      ) : (
+        <DiscoverRows />
+      )}
     </div>
   );
 }
@@ -78,6 +77,33 @@ async function SearchResults({
           : `${result.data.length} titles`}
       </p>
       <ResultList titles={result.data} />
+    </div>
+  );
+}
+
+async function DiscoverRows() {
+  const [trending, shows, movies] = await Promise.all([
+    listTrending(),
+    listPopular("tv"),
+    listPopular("movie"),
+  ]);
+  const rows: { title: string; result: TmdbResult<SearchTitle[]> }[] = [
+    { title: "Trending this week", result: trending },
+    { title: "Popular shows", result: shows },
+    { title: "Popular movies", result: movies },
+  ];
+
+  return (
+    <div className="grid gap-8">
+      {rows.map((row) =>
+        row.result.ok ? (
+          <PosterRail key={row.title} title={row.title} titles={row.result.data} />
+        ) : (
+          <Message key={row.title} tone="error" title={row.title}>
+            {row.result.error.message}
+          </Message>
+        ),
+      )}
     </div>
   );
 }
