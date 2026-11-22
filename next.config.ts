@@ -5,6 +5,27 @@ const scriptSrc = isDev
   ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
   : "script-src 'self' 'unsafe-inline'";
 
+/**
+ * Google sign-in posts a form to /auth/google, which redirects to Supabase and then
+ * to Google. Browsers apply form-action to every redirect in that chain, so both
+ * origins must be listed, or the button silently does nothing.
+ */
+function supabaseOrigin(): string | null {
+  const value = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!value) {
+    return null;
+  }
+  try {
+    return new URL(value).origin;
+  } catch {
+    return null;
+  }
+}
+
+const formAction = ["form-action 'self'", supabaseOrigin(), "https://accounts.google.com"]
+  .filter(Boolean)
+  .join(" ");
+
 const securityHeaders = [
   { key: "X-Frame-Options", value: "SAMEORIGIN" },
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -26,7 +47,7 @@ const securityHeaders = [
       "manifest-src 'self'",
       "frame-ancestors 'self'",
       "base-uri 'self'",
-      "form-action 'self'",
+      formAction,
       "object-src 'none'",
     ].join("; "),
   },
