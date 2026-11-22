@@ -132,10 +132,10 @@ export function QueuedShow({
     <div className="grid gap-3 rounded-3xl border border-line bg-card p-4">
       <Link
         href={`/tv/${showId}?season=${current.episode.seasonNumber}`}
-        className="grid items-center gap-4 sm:grid-cols-[7.5rem_1fr]"
+        className="flex items-center gap-3"
       >
         <AirCountdown today={today} airDate={current.episode.airDate} />
-        <span className="flex min-w-0 items-center gap-3">
+        <span className="flex min-w-0 flex-1 items-center gap-3">
           <Poster src={posterUrl} title={title} />
           <span className="grid min-w-0 gap-1">
             <span className="font-display text-2xl leading-tight">{title}</span>
@@ -177,13 +177,17 @@ function AirCountdown({ today, airDate }: { today: string; airDate: string | nul
   }
   if (hero.kind === "word") {
     return (
-      <p className="text-center font-display text-4xl leading-none text-accent">{hero.value}</p>
+      <p className="grid w-[4.75rem] shrink-0 place-items-center rounded-2xl bg-background px-2 py-3 text-center font-display text-xl leading-none text-accent">
+        {hero.value}
+      </p>
     );
   }
   return (
-    <p className="grid justify-items-center gap-1 text-center text-accent">
-      <span className="font-display text-5xl leading-none tabular-nums">{hero.value}</span>
-      <span className="text-xs font-semibold uppercase tracking-[0.16em]">{hero.label}</span>
+    <p className="grid w-[4.75rem] shrink-0 justify-items-center gap-1 rounded-2xl bg-background px-2 py-3 text-center text-accent">
+      <span className="font-display text-3xl leading-none tabular-nums">{hero.value}</span>
+      <span className="text-[0.65rem] font-semibold uppercase leading-tight tracking-wide">
+        {hero.label}
+      </span>
     </p>
   );
 }

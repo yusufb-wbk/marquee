@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 
+import { ChevronLeftIcon } from "@/components/icons";
 import { TitleLink } from "@/components/title-link";
 
 export type ShelfTitle = {
@@ -48,13 +49,16 @@ export function LibraryShelf({
         <div className="grid gap-8">
           <OpenGroup title="Shows" titles={watchlist} empty="No shows on your watchlist." />
           {ended.length > 0 ? (
-            <details className="grid gap-3">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
-                <span className="font-display text-2xl">Ended</span>
-                <span className="text-sm tabular-nums text-muted">{ended.length}</span>
-              </summary>
-              <TitleList titles={ended} />
-            </details>
+            <Link
+              href="/profile/ended"
+              className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-card px-4 py-3"
+            >
+              <span className="font-display text-2xl">Ended</span>
+              <span className="flex items-center gap-2 text-muted">
+                <span className="text-sm tabular-nums">{ended.length}</span>
+                <ChevronLeftIcon className="h-4 w-4 rotate-180" />
+              </span>
+            </Link>
           ) : null}
           {paused.length > 0 ? (
             <details className="grid gap-3">

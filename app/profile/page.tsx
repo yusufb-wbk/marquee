@@ -10,12 +10,11 @@ import { ProfileTabs, profileTab } from "@/components/profile-tabs";
 import { SchemaSetup } from "@/components/schema-setup";
 import { WatchStats } from "@/components/watch-stats";
 import { WatchedBrowser } from "@/components/watched-browser";
-import { isoDateUTC, showsEndedForNow } from "@/lib/calendar";
+import { loadEndedTitles } from "@/lib/library/ended";
 import { firstQueryValue } from "@/lib/format";
 import type { ShowStatus } from "@/lib/library/database";
 import type { TrackedMovie, TrackedShow } from "@/lib/library/queries";
 import { loadLibrary } from "@/lib/library/queries";
-import { lookupNextEpisode, watchedKeys } from "@/lib/library/up-next";
 import { requireUser } from "@/lib/require-user";
 import { buildWatchedTitles } from "@/lib/watched";
 
@@ -98,24 +97,7 @@ async function Shelf({
   movies: TrackedMovie[];
   episodes: { showTmdbId: number; seasonNumber: number; episodeNumber: number }[];
 }) {
-  const today = isoDateUTC(new Date());
-  const watching = shows.filter((show) => show.status === "watching");
-  const lookedUp = await Promise.all(
-    watching.map(async (show) => {
-      const keys = watchedKeys(
-        episodes.filter((episode) => episode.showTmdbId === show.tmdbId),
-      );
-      const next = await lookupNextEpisode(show.tmdbId, keys);
-      return { show, next };
-    }),
-  );
-  const ended = showsEndedForNow(lookedUp, today).map((item) => ({
-    id: item.show.tmdbId,
-    href: `/tv/${item.show.tmdbId}`,
-    title: item.show.title,
-    posterUrl: item.show.posterUrl,
-    meta: "",
-  }));
+  const ended = await loadEndedTitles(shows, episodes);
 
   return (
     <LibraryShelf

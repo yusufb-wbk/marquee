@@ -22,6 +22,7 @@ function isCurrent(pathname: string, href: string): boolean {
   if (href === "/profile") {
     return (
       pathname === "/profile" ||
+      pathname.startsWith("/profile/") ||
       pathname === "/watchlist" ||
       pathname === "/watched" ||
       pathname === "/stats"
