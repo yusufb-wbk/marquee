@@ -3,13 +3,27 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { getSupabaseEnv } from "@/lib/supabase/env";
 
-/** Absolute redirect that keeps only the path and query from `path`. */
+/**
+ * Same-origin redirect that keeps only the path and query from `path`.
+ * The Location is relative on purpose. `request.nextUrl` holds the address the
+ * server listens on (0.0.0.0 in dev), not the one the browser used. An absolute
+ * redirect there leaves the site, and CSP `form-action 'self'` blocks it.
+ */
 export function redirectTo(request: NextRequest, path: string): NextResponse {
-  const url = request.nextUrl.clone();
   const target = new URL(path, request.url);
-  url.pathname = target.pathname;
-  url.search = target.search;
-  return NextResponse.redirect(url, 303);
+  return new NextResponse(null, {
+    status: 303,
+    headers: { Location: `${target.pathname}${target.search}` },
+  });
+}
+
+/** The origin the browser used, from the Host header, such as http://localhost:3847. */
+export function browserOrigin(request: NextRequest): string {
+  const host = request.headers.get("host");
+  if (!host || host.includes("/") || host.includes(" ")) {
+    return request.nextUrl.origin;
+  }
+  return `${request.nextUrl.protocol}//${host}`;
 }
 
 /**

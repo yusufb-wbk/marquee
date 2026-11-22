@@ -23,7 +23,9 @@ function isWatchIntent(value: string): value is WatchIntent {
     value === "unwatch" ||
     value === "upto" ||
     value === "season" ||
-    value === "earlier"
+    value === "earlier" ||
+    value === "unwatch_season" ||
+    value === "unwatch_later"
   );
 }
 
@@ -64,6 +66,9 @@ export function EpisodeBoard({
   const watchedCount = seasonEpisodes.filter((episode) =>
     watchedKeys.has(episodeKey(episode)),
   ).length;
+  const laterWatched = [...watchedKeys].some(
+    (key) => Number(key.split(":")[0]) > seasonNumber,
+  );
 
   async function onSubmit(event: FormEvent<HTMLFormElement>, rowKey: string) {
     event.preventDefault();
@@ -96,7 +101,7 @@ export function EpisodeBoard({
       setErrorText(libraryNotice(result.error)?.title ?? "That change was not saved");
       return;
     }
-    if (intent !== "unwatch" && !showTracked) {
+    if (!intent.startsWith("unwatch") && !showTracked) {
       publishShowStatus("watching");
       onTracked();
     }
@@ -121,7 +126,10 @@ export function EpisodeBoard({
             episodeNumber={episodes[0]?.episodeNumber ?? 1}
             nextPath={nextPath}
             complete={complete}
+            watchedCount={watchedCount}
+            laterWatched={laterWatched}
             pending={pendingKey === "season"}
+            pendingIntent={pendingKey === "season" ? pendingIntent : null}
             onSubmit={(event) => {
               void onSubmit(event, "season");
             }}
@@ -201,7 +209,10 @@ function SeasonWatch({
   episodeNumber,
   nextPath,
   complete,
+  watchedCount,
+  laterWatched,
   pending,
+  pendingIntent,
   onSubmit,
 }: {
   csrf: string;
@@ -210,10 +221,15 @@ function SeasonWatch({
   episodeNumber: number;
   nextPath: string;
   complete: boolean;
+  watchedCount: number;
+  laterWatched: boolean;
   pending: boolean;
+  pendingIntent: WatchIntent | null;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [unmarking, setUnmarking] = useState(false);
+  const unmarkPending = pendingIntent === "unwatch_season" || pendingIntent === "unwatch_later";
   const earlier = seasonNumber > 1;
   const choice =
     "inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold disabled:opacity-60";
@@ -222,8 +238,11 @@ function SeasonWatch({
     <form
       action="/library/episode"
       method="post"
-      className="w-full sm:w-auto"
-      onSubmit={onSubmit}
+      className="grid w-full gap-2 sm:w-auto"
+      onSubmit={(event) => {
+        setUnmarking(false);
+        onSubmit(event);
+      }}
     >
       <input type="hidden" name="csrf" value={csrf} />
       <input type="hidden" name="showId" value={showId} />
@@ -247,7 +266,7 @@ function SeasonWatch({
             disabled={pending}
             className={`${choice} bg-accent text-accent-ink`}
           >
-            {pending ? "Saving…" : "This season"}
+            {pending && !unmarkPending ? "Saving…" : "This season"}
           </button>
           <button
             type="submit"
@@ -256,7 +275,7 @@ function SeasonWatch({
             disabled={pending}
             className={`${choice} border border-line`}
           >
-            {pending ? "Saving…" : "Earlier seasons too"}
+            {pending && !unmarkPending ? "Saving…" : "Earlier seasons too"}
           </button>
         </div>
       ) : (
@@ -274,9 +293,62 @@ function SeasonWatch({
           }
           className="inline-flex h-11 w-full items-center justify-center rounded-full border border-line px-4 text-sm font-semibold disabled:opacity-60 sm:w-auto"
         >
-          {pending ? "Saving…" : "Mark season watched"}
+          {pending && !unmarkPending ? "Saving…" : "Mark season watched"}
         </button>
       )}
+      {watchedCount > 0 || laterWatched ? (
+        unmarking ? (
+          <div className="grid gap-2 rounded-2xl border border-line p-2">
+            <p className="px-2 pt-1 text-xs text-muted">
+              Unmark watched episodes. Their ratings and notes are removed too.
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {watchedCount > 0 ? (
+                <button
+                  type="submit"
+                  name="intent"
+                  value="unwatch_season"
+                  disabled={pending}
+                  className={`${choice} border border-danger/50 text-danger`}
+                >
+                  This season
+                </button>
+              ) : null}
+              {laterWatched ? (
+                <button
+                  type="submit"
+                  name="intent"
+                  value="unwatch_later"
+                  disabled={pending}
+                  className={`${choice} border border-danger/50 text-danger`}
+                >
+                  This and later seasons
+                </button>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setUnmarking(false);
+              }}
+              className={`${choice} text-muted`}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              setUnmarking(true);
+            }}
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full px-3 text-sm text-muted hover:text-foreground disabled:opacity-60"
+          >
+            {unmarkPending ? "Unmarking…" : "Unmark…"}
+          </button>
+        )
+      ) : null}
     </form>
   );
 }

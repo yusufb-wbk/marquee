@@ -5,7 +5,8 @@ import { postLibrary } from "@/lib/library/finish";
 import { importImdbCsv } from "@/lib/library/import-imdb";
 import { consumeRateLimit } from "@/lib/rate-limit";
 
-const IMPORT_PER_USER = { limit: 6, windowMs: 60 * 60 * 1000 };
+// The import page uploads the same file again until every title is in, 50 lookups at a time.
+const IMPORT_PER_USER = { limit: 60, windowMs: 60 * 60 * 1000 };
 const MAX_BYTES = 1_500_000;
 
 export async function POST(request: NextRequest) {
@@ -24,6 +25,7 @@ export async function POST(request: NextRequest) {
       return { ok: false, error: "save" };
     }
     const csv = await file.text();
-    return importImdbCsv(userId, csv);
+    const cursor = Number(formData.get("cursor") ?? 0);
+    return importImdbCsv(userId, csv, Number.isFinite(cursor) ? cursor : 0);
   });
 }

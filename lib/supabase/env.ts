@@ -17,26 +17,32 @@ export function getSupabaseEnv(): SupabaseEnv | null {
     readEnv("SUPABASE_ANON_KEY") ??
     readEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
 
-  if (!url || !publishableKey || !isAllowedSupabaseUrl(url)) {
+  const origin = url ? allowedSupabaseOrigin(url) : null;
+  if (!origin || !publishableKey) {
     return null;
   }
 
-  return { url, publishableKey };
+  return { url: origin, publishableKey };
 }
 
-function isAllowedSupabaseUrl(value: string): boolean {
+/**
+ * Returns only the origin, such as https://xxxx.supabase.co.
+ * Supabase's API page also shows the REST endpoint (…/rest/v1/). If that is pasted,
+ * the client sends auth calls to /rest/v1/auth/v1/…, and Supabase refuses them.
+ */
+function allowedSupabaseOrigin(value: string): string | null {
   let url: URL;
   try {
     url = new URL(value);
   } catch {
-    return false;
+    return null;
   }
 
   if (url.protocol === "https:") {
-    return true;
+    return url.origin;
   }
 
   const isLocalHost =
     url.hostname === "localhost" || url.hostname === "127.0.0.1";
-  return url.protocol === "http:" && isLocalHost;
+  return url.protocol === "http:" && isLocalHost ? url.origin : null;
 }

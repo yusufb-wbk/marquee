@@ -85,15 +85,20 @@ async function ProfileScreen({ searchParams }: PageProps) {
         </Message>
       ) : null}
       {library.ok && tab === "watchlist" ? (
-        <Shelf
-          shows={library.data.shows}
-          movies={library.data.movies}
-          episodes={library.data.episodes}
-        />
+        <div className="grid gap-4">
+          <Link href="/import?list=watchlist" className="text-sm font-semibold text-accent">
+            Import from IMDb
+          </Link>
+          <Shelf
+            shows={library.data.shows}
+            movies={library.data.movies}
+            episodes={library.data.episodes}
+          />
+        </div>
       ) : null}
       {library.ok && tab === "watched" ? (
         <div className="grid gap-4">
-          <Link href="/import" className="text-sm font-semibold text-accent">
+          <Link href="/import?list=watched" className="text-sm font-semibold text-accent">
             Import from IMDb
           </Link>
           <WatchedBrowser

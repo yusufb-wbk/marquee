@@ -15,6 +15,7 @@ export function LoginPanel({
 }) {
   const [mode, setMode] = useState(initialMode);
   const [mismatch, setMismatch] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const creating = mode === "signup";
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -30,6 +31,7 @@ export function LoginPanel({
 
   function switchMode() {
     setMismatch(false);
+    setShowPassword(false);
     setMode(creating ? "login" : "signup");
   }
 
@@ -58,15 +60,27 @@ export function LoginPanel({
           </label>
           <label className="grid gap-2 text-sm font-medium" htmlFor="password">
             Password
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete={creating ? "new-password" : "current-password"}
-              required
-              minLength={8}
-              className="h-12 rounded-xl border border-line bg-background px-4 text-base font-normal text-foreground"
-            />
+            <div className="relative">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete={creating ? "new-password" : "current-password"}
+                required
+                minLength={8}
+                className="h-12 w-full rounded-xl border border-line bg-background pl-4 pr-12 text-base font-normal text-foreground"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((shown) => !shown)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                aria-controls={creating ? "password confirm" : "password"}
+                className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-xl text-muted hover:text-foreground"
+              >
+                <EyeIcon crossed={showPassword} />
+              </button>
+            </div>
           </label>
           {creating ? (
             <label className="grid gap-2 text-sm font-medium" htmlFor="confirm">
@@ -74,7 +88,7 @@ export function LoginPanel({
               <input
                 id="confirm"
                 name="confirm"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
                 required
                 minLength={8}
@@ -99,10 +113,30 @@ export function LoginPanel({
             onClick={switchMode}
             className="inline-flex h-12 w-full items-center justify-center rounded-xl px-4 text-base font-semibold text-accent"
           >
-            {creating ? "I already have an account" : "No account yet"}
+            {creating ? "I already have an account" : "Create account"}
           </button>
         </form>
       </div>
     </div>
+  );
+}
+
+function EyeIcon({ crossed }: { crossed: boolean }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      width="20"
+      height="20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+      <circle cx="12" cy="12" r="3" />
+      {crossed ? <path d="M3 3l18 18" /> : null}
+    </svg>
   );
 }

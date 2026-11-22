@@ -5,7 +5,7 @@ import { clientAddress } from "@/lib/client-address";
 import { CSRF_COOKIE, csrfMatches } from "@/lib/csrf";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { getSupabaseEnv } from "@/lib/supabase/env";
-import { redirectTo } from "@/lib/supabase/route";
+import { browserOrigin, redirectTo } from "@/lib/supabase/route";
 
 const GOOGLE_PER_ADDRESS = { limit: 20, windowMs: 15 * 60 * 1000 };
 
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  const origin = request.nextUrl.origin;
+  const origin = browserOrigin(request);
   let target: string | null = null;
   try {
     const { data, error } = await supabase.auth.signInWithOAuth({

@@ -2,7 +2,12 @@ import "server-only";
 
 import { episodeKey, episodesUpTo, type EpisodeRef } from "@/lib/progress";
 import { parseIsoDate, isoDateUTC } from "@/lib/calendar";
-import { libraryFailure, type LibraryResult } from "@/lib/library/queries";
+import {
+  libraryFailure,
+  selectAllPages,
+  type LibraryCode,
+  type LibraryResult,
+} from "@/lib/library/queries";
 import { parseNoteField, parseRatingField } from "@/lib/rating";
 import { createClient } from "@/lib/supabase/server";
 import { getMovie, getTvSeason, getTvShow } from "@/lib/tmdb/client";
@@ -216,12 +221,22 @@ export async function saveMovieStatus(
   return savedOr(written.error);
 }
 
-type EpisodeIntent = "watch" | "unwatch" | "season" | "earlier" | "upto" | "save";
+type EpisodeIntent =
+  | "watch"
+  | "unwatch"
+  | "unwatch_season"
+  | "unwatch_later"
+  | "season"
+  | "earlier"
+  | "upto"
+  | "save";
 
 function isEpisodeIntent(value: string): value is EpisodeIntent {
   return (
     value === "watch" ||
     value === "unwatch" ||
+    value === "unwatch_season" ||
+    value === "unwatch_later" ||
     value === "season" ||
     value === "earlier" ||
     value === "upto" ||
@@ -253,6 +268,21 @@ export async function saveEpisode(
   const note = parseNoteField(noteRaw);
   if (!note.ok) {
     return { ok: false, error: "note" };
+  }
+
+  if (intent === "unwatch_season" || intent === "unwatch_later") {
+    const supabase = await createClient();
+    const query = supabase
+      .from("episode_watches")
+      .delete()
+      .eq("user_id", userId)
+      .eq("show_tmdb_id", showId);
+    // "Later" clears this season and every one after it. Specials (season 0) stay.
+    const removed =
+      intent === "unwatch_season"
+        ? await query.eq("season_number", seasonNumber)
+        : await query.gte("season_number", Math.max(1, seasonNumber));
+    return savedOr(removed.error);
   }
 
   if (intent === "unwatch") {
@@ -479,17 +509,75 @@ async function ensureWatchingShow(userId: string, showId: number): Promise<Saved
   return saveShowStatus(userId, showId, "watching");
 }
 
+export type MarkAllResult =
+  | { ok: true; marked: number }
+  | { ok: false; busy: boolean; error: LibraryCode };
+
+/**
+ * Marks every episode that has aired (specials left out) as watched.
+ * `watchedOn` (YYYY-MM-DD) dates the watches, so imports do not all land on today.
+ * Returns busy when TMDB is pacing requests; the caller can try again later.
+ */
+export async function markAllAiredEpisodes(
+  userId: string,
+  showId: number,
+  watchedOn: string | null,
+): Promise<MarkAllResult> {
+  const today = isoDateUTC(new Date());
+  const show = await getTvShow(showId);
+  if (!show.ok) {
+    return {
+      ok: false,
+      busy: show.error.kind === "rate_limit",
+      error: show.error.kind === "not_found" ? "missing" : "save",
+    };
+  }
+  const collected: MarkedEpisode[] = [];
+  for (const season of show.data.seasons) {
+    if (season.seasonNumber === 0 || (season.airDate !== null && season.airDate > today)) {
+      continue;
+    }
+    const loaded = await getTvSeason(showId, season.seasonNumber);
+    if (!loaded.ok) {
+      if (loaded.error.kind === "not_found") {
+        continue;
+      }
+      return { ok: false, busy: loaded.error.kind === "rate_limit", error: "save" };
+    }
+    for (const episode of loaded.data.episodes) {
+      if (episode.airDate !== null && episode.airDate <= today) {
+        collected.push(toMarked(season.seasonNumber, episode));
+      }
+    }
+  }
+  if (collected.length === 0) {
+    return { ok: true, marked: 0 };
+  }
+  const watchedAt = watchedOn && /^\d{4}-\d{2}-\d{2}$/.test(watchedOn) ? `${watchedOn}T12:00:00Z` : undefined;
+  const inserted = await insertNewWatches(userId, showId, collected, watchedAt);
+  if (!inserted.ok) {
+    return { ok: false, busy: false, error: inserted.error };
+  }
+  return { ok: true, marked: collected.length };
+}
+
 async function insertNewWatches(
   userId: string,
   showId: number,
   episodes: MarkedEpisode[],
+  watchedAt?: string,
 ): Promise<Saved> {
   const supabase = await createClient();
-  const existing = await supabase
-    .from("episode_watches")
-    .select("season_number, episode_number")
-    .eq("user_id", userId)
-    .eq("show_tmdb_id", showId);
+  const existing = await selectAllPages((from, to) =>
+    supabase
+      .from("episode_watches")
+      .select("season_number, episode_number")
+      .eq("user_id", userId)
+      .eq("show_tmdb_id", showId)
+      .order("season_number")
+      .order("episode_number")
+      .range(from, to),
+  );
   if (existing.error) {
     return { ok: false, error: libraryFailure(existing.error) };
   }
@@ -513,6 +601,7 @@ async function insertNewWatches(
       episode_number: episode.episodeNumber,
       name: episode.name,
       runtime_minutes: episode.runtime,
+      ...(watchedAt ? { watched_at: watchedAt } : {}),
     })),
   );
   return savedOr(inserted.error);

@@ -151,6 +151,35 @@ function mapMovie(row: MovieRow): TrackedMovie | null {
   };
 }
 
+const PAGE_SIZE = 1000;
+
+/**
+ * Supabase returns at most 1000 rows per request. Reads every page.
+ * `page` must apply a stable order so rows do not shift between pages.
+ */
+export async function selectAllPages<T>(
+  page: (
+    from: number,
+    to: number,
+  ) => PromiseLike<{ data: T[] | null; error: { code?: string; message: string } | null }>,
+): Promise<{ data: T[]; error: null } | { data: null; error: { code?: string; message: string } }> {
+  const rows: T[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const result = await page(from, from + PAGE_SIZE - 1);
+    if (result.error) {
+      return { data: null, error: result.error };
+    }
+    const data = result.data ?? [];
+    rows.push(...data);
+    if (data.length < PAGE_SIZE) {
+      return { data: rows, error: null };
+    }
+  }
+}
+
+const EPISODE_COLUMNS =
+  "user_id, show_tmdb_id, season_number, episode_number, name, runtime_minutes, rating, note, watched_at";
+
 async function client(): Promise<SupabaseClient<Database>> {
   return createClient();
 }
@@ -224,12 +253,16 @@ export async function loadLibrary(userId: string): Promise<
       )
       .eq("user_id", userId)
       .order("updated_at", { ascending: false }),
-    supabase
-      .from("episode_watches")
-      .select(
-        "user_id, show_tmdb_id, season_number, episode_number, name, runtime_minutes, rating, note, watched_at",
-      )
-      .eq("user_id", userId),
+    selectAllPages((from, to) =>
+      supabase
+        .from("episode_watches")
+        .select(EPISODE_COLUMNS)
+        .eq("user_id", userId)
+        .order("show_tmdb_id")
+        .order("season_number")
+        .order("episode_number")
+        .range(from, to),
+    ),
   ]);
 
   if (shows.error) {
@@ -265,13 +298,16 @@ export async function loadShowProgress(
   const supabase = await client();
   const [show, episodes] = await Promise.all([
     loadShowRow(supabase, userId, tmdbId),
-    supabase
-      .from("episode_watches")
-      .select(
-        "user_id, show_tmdb_id, season_number, episode_number, name, runtime_minutes, rating, note, watched_at",
-      )
-      .eq("user_id", userId)
-      .eq("show_tmdb_id", tmdbId),
+    selectAllPages((from, to) =>
+      supabase
+        .from("episode_watches")
+        .select(EPISODE_COLUMNS)
+        .eq("user_id", userId)
+        .eq("show_tmdb_id", tmdbId)
+        .order("season_number")
+        .order("episode_number")
+        .range(from, to),
+    ),
   ]);
 
   if (show.error) {

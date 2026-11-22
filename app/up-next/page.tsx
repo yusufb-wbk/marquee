@@ -12,6 +12,9 @@ import type { TrackedShow } from "@/lib/library/queries";
 import { loadLibrary } from "@/lib/library/queries";
 import { lookupNextEpisode, watchedKeys } from "@/lib/library/up-next";
 import { requireUser } from "@/lib/require-user";
+import { mapWithLimit } from "@/lib/concurrency";
+
+const UP_NEXT_CONCURRENCY = 8;
 
 export const metadata = {
   title: "Up next",
@@ -60,21 +63,27 @@ async function Queue({
   const csrf = await readCsrfToken();
   const today = isoDateUTC(new Date());
   const watching = library.shows.filter((show) => show.status === "watching");
-  const queued = await Promise.all(
-    watching.map(async (show) => {
+  // A few shows at a time, so a long list does not fire hundreds of TMDB requests at once.
+  const queued = await mapWithLimit(
+    watching,
+    UP_NEXT_CONCURRENCY,
+    async (show) => {
       const keys = watchedKeys(
         library.episodes.filter((episode) => episode.showTmdbId === show.tmdbId),
       );
       const next = await lookupNextEpisode(show.tmdbId, keys);
       return { show, next };
-    }),
+    },
   );
 
   const waiting = showsAiringThisYear(queued, today).slice().sort(byAirDate);
+  // Shows whose next episode could not be loaded (often TMDB pacing) are not "nothing to watch".
+  const unavailable = queued.filter((item) => item.next.state === "error").length;
   return (
     <UpNextQueue
       csrf={csrf}
       hadWatching={watching.length > 0}
+      unavailable={unavailable}
       today={today}
       items={waiting.map((item) => ({
         showId: item.show.tmdbId,

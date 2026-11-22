@@ -62,6 +62,19 @@ describe("watched up to here", () => {
     );
   });
 
+  it("unmarks a season, or a season and every later one, keeping specials", () => {
+    const watched = new Set(["0:1", "1:1", "1:2", "2:1", "2:2", "3:1"]);
+    const target = { seasonNumber: 2, episodeNumber: 1 };
+    assert.deepEqual(
+      [...applyWatchChange(watched, "unwatch_season", target, [])].sort(),
+      ["0:1", "1:1", "1:2", "3:1"],
+    );
+    assert.deepEqual(
+      [...applyWatchChange(watched, "unwatch_later", target, [])].sort(),
+      ["0:1", "1:1", "1:2"],
+    );
+  });
+
   it("marks the tapped episode and the whole season in the open list", () => {
     const season = catalog.filter((episode) => episode.seasonNumber === 1);
     const watched = new Set<string>();

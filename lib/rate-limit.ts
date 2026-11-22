@@ -28,6 +28,17 @@ export function consumeRateLimit(
   return true;
 }
 
+/** How many hits are still allowed in the window, without using one up. */
+export function remainingRateLimit(
+  key: string,
+  window: RateWindow,
+  now = Date.now(),
+): number {
+  const hits = buckets.get(key) ?? [];
+  const fresh = hits.filter((hit) => now - hit.at < window.windowMs).length;
+  return Math.max(0, window.limit - fresh);
+}
+
 export function resetRateLimits(): void {
   buckets.clear();
 }

@@ -4,7 +4,6 @@ import { useEffect, useState, type FormEvent } from "react";
 
 import {
   BookmarkIcon,
-  CheckIcon,
   CloseIcon,
   EyeIcon,
   PauseIcon,
@@ -103,11 +102,17 @@ export function ShowStatusControls({
       />
       <div className={finished ? "grid grid-cols-2 gap-2" : "grid grid-cols-3 gap-2"}>
         {OPTIONS.filter((option) => !finished || option.status !== "stopped").map((option) => {
-          const label = finished && option.status === "watching" ? "Watched" : option.label;
           const selected =
             option.status === "watching"
               ? status === "watching" || (finished && status === "stopped")
               : status === option.status;
+          // "Stop" is an action until the show is stopped; then it names the state.
+          const label =
+            finished && option.status === "watching"
+              ? "Watched"
+              : option.status === "stopped" && selected
+                ? "Stopped"
+                : option.label;
           return (
             <button
               key={option.status}
@@ -122,7 +127,8 @@ export function ShowStatusControls({
                   : "grid min-h-16 content-center justify-items-center gap-1 rounded-2xl border border-line px-2 py-2 text-xs font-semibold disabled:opacity-60"
               }
             >
-              {selected ? <CheckIcon className="h-5 w-5" /> : <option.Icon className="h-5 w-5" />}
+              {/* Each state keeps its own icon; the filled button shows which one is current. */}
+              <option.Icon className="h-5 w-5" />
               {pending === option.status ? "Saving…" : label}
             </button>
           );

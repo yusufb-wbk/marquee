@@ -2,23 +2,46 @@ import "server-only";
 
 import { parseImdbCsv, type ImdbCsvRow } from "@/lib/imdb-csv";
 import type { MovieStatus, ShowStatus } from "@/lib/library/database";
-import { saveMovieStatus, saveShowStatus } from "@/lib/library/save";
+import { markAllAiredEpisodes, saveMovieStatus, saveShowStatus } from "@/lib/library/save";
 import type { LibraryResult } from "@/lib/library/queries";
-import { libraryFailure } from "@/lib/library/queries";
+import { libraryFailure, selectAllPages } from "@/lib/library/queries";
 import { ratingToStored } from "@/lib/rating";
 import { createClient } from "@/lib/supabase/server";
-import { findByImdbId } from "@/lib/tmdb/client";
+import { findByImdbId, tmdbHeadroom } from "@/lib/tmdb/client";
 import type { ImdbFind } from "@/lib/tmdb/parse";
 
-const LOOKUP_CAP = 25;
+const LOOKUP_CAP = 50;
+const LOOKUP_CONCURRENCY = 6;
+// Filling in a show's episodes costs one TMDB request per season. Only do it while
+// this much of the app's budget is left, so Up next and search keep working.
+const RESERVE_PER_MINUTE = 300;
+
+export type ImportItem = {
+  imdbId: string;
+  title: string;
+  /** Why it was not imported, for failed titles. */
+  reason?: string;
+};
 
 export type ImportSummary = {
   imported: number;
+  /** Rated shows whose aired episodes were all marked watched. */
+  completed: number;
+  /** Titles in the file, for progress. */
+  totalRows: number;
+  /** The titles behind the skipped, unmatched and failed counts, so people can see which ones. */
+  skippedItems: ImportItem[];
+  unmatchedItems: ImportItem[];
+  failedItems: ImportItem[];
   skipped: number;
   unmatched: number;
   failed: number;
   remaining: number;
   idsStored: boolean;
+  /** True when TMDB lookups were paused by a rate limit. The caller can wait and upload again. */
+  paused: boolean;
+  /** Row to start from on the next upload of the same file, or null when the file is done. */
+  nextCursor: number | null;
   problem: string | null;
 };
 
@@ -37,6 +60,7 @@ type Hit =
 export async function importImdbCsv(
   userId: string,
   csv: string,
+  cursor = 0,
 ): Promise<LibraryResult<ImportSummary>> {
   const parsed = parseImdbCsv(csv);
   if (!parsed.ok) {
@@ -44,11 +68,18 @@ export async function importImdbCsv(
       ok: true,
       data: {
         imported: 0,
+        completed: 0,
+        totalRows: 0,
+        skippedItems: [],
+        unmatchedItems: [],
+        failedItems: [],
         skipped: 0,
         unmatched: 0,
         failed: 0,
         remaining: 0,
         idsStored: true,
+        paused: false,
+        nextCursor: null,
         problem: parsed.error,
       },
     };
@@ -56,60 +87,166 @@ export async function importImdbCsv(
 
   const summary: ImportSummary = {
     imported: 0,
+    completed: 0,
+    totalRows: parsed.rows.length,
+    skippedItems: [],
+    unmatchedItems: [],
+    failedItems: [],
     skipped: 0,
     unmatched: 0,
     failed: 0,
     remaining: 0,
     idsStored: true,
+    paused: false,
+    nextCursor: null,
     problem: null,
   };
+  const item = (row: ImdbCsvRow, reason?: string): ImportItem =>
+    reason ? { imdbId: row.imdbId, title: row.title, reason } : { imdbId: row.imdbId, title: row.title };
+  const skip = (row: ImdbCsvRow) => {
+    summary.skipped += 1;
+    summary.skippedItems.push(item(row));
+  };
+  const fail = (row: ImdbCsvRow, reason: string) => {
+    summary.failed += 1;
+    summary.failedItems.push(item(row, reason));
+  };
+
   const known = await loadKnownIds(userId);
-  let lookups = 0;
+  const shows = await loadShowState(userId);
+  // A rated show already in the library with no watched episodes still needs them filled in.
+  const needsEpisodes = (row: ImdbCsvRow): number | null => {
+    if (row.rating === null) {
+      return null;
+    }
+    const showId = shows.byImdb.get(row.imdbId);
+    return showId !== undefined && !shows.withEpisodes.has(showId) ? showId : null;
+  };
+  const needsWork = (row: ImdbCsvRow) => !known.has(row.imdbId) || needsEpisodes(row) !== null;
 
-  for (const row of parsed.rows) {
-    if (known.has(row.imdbId)) {
-      summary.skipped += 1;
+  const startAt = Math.min(Math.max(0, Math.floor(cursor)), parsed.rows.length);
+  // Pick the next LOOKUP_CAP titles that still need work, keeping their place in the file.
+  const batch: { row: ImdbCsvRow; at: number; showId: number | null }[] = [];
+  let scanned = startAt;
+  for (; scanned < parsed.rows.length && batch.length < LOOKUP_CAP; scanned += 1) {
+    const row = parsed.rows[scanned];
+    if (!row) {
       continue;
     }
-    if (lookups >= LOOKUP_CAP) {
-      summary.remaining += 1;
+    if (!needsWork(row)) {
+      skip(row);
       continue;
     }
-    lookups += 1;
+    batch.push({ row, at: scanned, showId: known.has(row.imdbId) ? needsEpisodes(row) : null });
+  }
+  let nextCursor: number | null = scanned < parsed.rows.length ? scanned : null;
 
-    const found = await findByImdbId(row.imdbId);
-    if (!found.ok) {
-      if (found.error.kind === "rate_limit") {
-        summary.remaining += parsed.rows.length - parsed.rows.indexOf(row);
-        break;
+  /** Marks a rated show's aired episodes. Returns false when TMDB needs a break. */
+  const completeShow = async (showId: number, row: ImdbCsvRow): Promise<boolean> => {
+    const room = tmdbHeadroom();
+    if (room.minute < RESERVE_PER_MINUTE) {
+      return false;
+    }
+    const marked = await markAllAiredEpisodes(userId, showId, row.date);
+    if (!marked.ok) {
+      if (marked.busy) {
+        return false;
       }
-      summary.failed += 1;
-      continue;
+      fail(
+        row,
+        marked.error === "missing"
+          ? "TMDB has no episode list for this show."
+          : "Its episodes could not be saved.",
+      );
+      return true;
     }
-
-    const hit = chooseHit(found.data, row.titleType);
-    if (!hit) {
-      summary.unmatched += 1;
-      continue;
+    shows.withEpisodes.add(showId);
+    if (marked.marked > 0) {
+      summary.completed += 1;
     }
+    return true;
+  };
 
-    const saved = await writeHit(userId, row, hit, summary);
-    if (!saved.ok) {
-      if (saved.error === "schema") {
-        return saved;
+  // Look titles up a few at a time, then save them one by one in file order.
+  for (let start = 0; start < batch.length; start += LOOKUP_CONCURRENCY) {
+    const group = batch.slice(start, start + LOOKUP_CONCURRENCY);
+    const results = await Promise.all(
+      group.map(({ row, showId }) => (showId === null ? findByImdbId(row.imdbId) : null)),
+    );
+
+    let pausedAt: number | null = null;
+    for (const [index, { row, at, showId }] of group.entries()) {
+      if (showId !== null) {
+        if (!(await completeShow(showId, row))) {
+          pausedAt ??= at;
+        }
+        continue;
       }
-      summary.failed += 1;
-      continue;
+
+      const found = results[index];
+      if (!found) {
+        continue;
+      }
+      if (!found.ok) {
+        if (found.error.kind === "rate_limit") {
+          pausedAt ??= at;
+          continue;
+        }
+        fail(row, found.error.message);
+        continue;
+      }
+
+      const hit = chooseHit(found.data, row.titleType);
+      if (!hit) {
+        summary.unmatched += 1;
+        summary.unmatchedItems.push(item(row, row.titleType ? `IMDb type: ${row.titleType}` : undefined));
+        continue;
+      }
+
+      const saved = await writeHit(userId, row, hit, summary);
+      if (!saved.ok) {
+        if (saved.error === "schema") {
+          return saved;
+        }
+        fail(row, saveReason(saved.error));
+        continue;
+      }
+      known.add(row.imdbId);
+      if (saved.data === "skipped") {
+        skip(row);
+      } else {
+        summary.imported += 1;
+      }
+
+      if (hit.kind === "tv" && row.rating !== null) {
+        // Rated on IMDb means watched: mark every aired episode, like a watched movie.
+        shows.byImdb.set(row.imdbId, hit.id);
+        if (!(await completeShow(hit.id, row))) {
+          // The show is saved. The next upload picks it up and fills in its episodes.
+          pausedAt ??= at;
+        }
+      }
     }
-    known.add(row.imdbId);
-    if (saved.data === "skipped") {
-      summary.skipped += 1;
-    } else {
-      summary.imported += 1;
+
+    if (pausedAt !== null) {
+      // Start again from the first title that had to wait. Titles after it that did save are skipped next time.
+      summary.paused = true;
+      nextCursor = pausedAt;
+      break;
     }
   }
 
+  summary.nextCursor = nextCursor;
+  summary.remaining =
+    nextCursor === null ? 0 : parsed.rows.slice(nextCursor).filter(needsWork).length;
   return { ok: true, data: summary };
+}
+
+function saveReason(code: string): string {
+  if (code === "missing") {
+    return "TMDB could not find the details for this title.";
+  }
+  return "It could not be saved to your library.";
 }
 
 async function writeHit(
@@ -282,6 +419,39 @@ async function loadKnownIds(userId: string): Promise<Set<string>> {
     }
   }
   return known;
+}
+
+/** Shows in the library by IMDb id, and the shows that have at least one watched episode. */
+async function loadShowState(
+  userId: string,
+): Promise<{ byImdb: Map<string, number>; withEpisodes: Set<number> }> {
+  const supabase = await createClient();
+  const byImdb = new Map<string, number>();
+  const withEpisodes = new Set<number>();
+  const tracked = await supabase
+    .from("tracked_shows")
+    .select("tmdb_id, imdb_id")
+    .eq("user_id", userId);
+  if (!tracked.error) {
+    for (const row of tracked.data) {
+      if (typeof row.imdb_id === "string" && row.imdb_id.length > 0) {
+        byImdb.set(row.imdb_id, row.tmdb_id);
+      }
+    }
+  }
+  // A long history has far more than the 1000 rows Supabase returns per request.
+  const watched = await selectAllPages((from, to) =>
+    supabase
+      .from("episode_watches")
+      .select("show_tmdb_id")
+      .eq("user_id", userId)
+      .order("show_tmdb_id")
+      .range(from, to),
+  );
+  for (const row of watched.data ?? []) {
+    withEpisodes.add(row.show_tmdb_id);
+  }
+  return { byImdb, withEpisodes };
 }
 
 async function rememberShow(

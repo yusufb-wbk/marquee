@@ -4,7 +4,7 @@ import { cacheLife } from "next/cache";
 import { connection } from "next/server";
 
 import { readEnv } from "@/lib/env";
-import { consumeRateLimit } from "@/lib/rate-limit";
+import { consumeRateLimit, remainingRateLimit } from "@/lib/rate-limit";
 import { normalizeSearchQuery } from "@/lib/search-query";
 import {
   parseImdbFind,
@@ -26,8 +26,16 @@ import {
   type TvShow,
 } from "@/lib/tmdb/types";
 
-const UPSTREAM_PER_MINUTE = { limit: 80, windowMs: 60 * 1000 };
-const UPSTREAM_PER_HOUR = { limit: 400, windowMs: 60 * 60 * 1000 };
+// TMDB allows about 50 requests a second per IP and has no daily cap.
+// Stay a little under that so a burst never gets refused upstream.
+const UPSTREAM_PER_SECOND = { limit: 35, windowMs: 1000 };
+const UPSTREAM_PER_MINUTE = { limit: 1500, windowMs: 60 * 1000 };
+// IMDb imports get their own smaller share, so a big import never
+// leaves Up next, search and title pages without TMDB lookups.
+const IMPORT_PER_SECOND = { limit: 10, windowMs: 1000 };
+const IMPORT_PER_MINUTE = { limit: 400, windowMs: 60 * 1000 };
+// When the per-second budget is full, wait this long at most for a free slot.
+const SLOT_WAIT_MS = 5000;
 const SEARCH_PER_USER = { limit: 60, windowMs: 10 * 60 * 1000 };
 const SEARCH_GLOBAL = { limit: 120, windowMs: 10 * 60 * 1000 };
 
@@ -67,24 +75,76 @@ function failure(kind: TmdbErrorKind, message?: string): TmdbError {
   return { kind, message: message ?? MESSAGES[kind] };
 }
 
+/**
+ * Checked before the cache. Only the key is checked here: the request budget is
+ * charged in tmdbGet, which runs on a cache miss, so cached answers cost nothing.
+ */
 function gateTmdb(): TmdbError | null {
   if (!hasTmdbCredentials()) {
     return failure("missing_key");
   }
-  return upstreamPause();
+  return null;
 }
 
-function upstreamPause(): TmdbError | null {
-  const allowed =
-    consumeRateLimit("tmdb:minute", UPSTREAM_PER_MINUTE) &&
-    consumeRateLimit("tmdb:hour", UPSTREAM_PER_HOUR);
-  if (allowed) {
-    return null;
+type Budget = "app" | "import";
+
+/**
+ * TMDB requests the app can still make this minute.
+ * Heavy background work (like filling in episodes during an import) checks this first
+ * so it leaves room for the pages people are looking at.
+ */
+export function tmdbHeadroom(): { minute: number } {
+  return { minute: remainingRateLimit("tmdb:minute", UPSTREAM_PER_MINUTE) };
+}
+
+const BUCKETS: Record<Budget, [string, { limit: number; windowMs: number }][]> = {
+  app: [
+    ["tmdb:second", UPSTREAM_PER_SECOND],
+    ["tmdb:minute", UPSTREAM_PER_MINUTE],
+  ],
+  import: [
+    ["tmdb:import:second", IMPORT_PER_SECOND],
+    ["tmdb:import:minute", IMPORT_PER_MINUTE],
+    ["tmdb:second", UPSTREAM_PER_SECOND],
+    ["tmdb:minute", UPSTREAM_PER_MINUTE],
+  ],
+};
+
+/** Takes one request slot from every bucket, or none if any bucket is full. */
+function takeSlot(budget: Budget): boolean {
+  const buckets = BUCKETS[budget];
+  // Check every bucket before using any, so a full bucket does not waste the others.
+  if (buckets.some(([key, window]) => remainingRateLimit(key, window) === 0)) {
+    return false;
   }
-  return failure(
-    "rate_limit",
-    "Marquee is pausing TMDB requests so the key is not used up. Try again in a few minutes.",
-  );
+  for (const [key, window] of buckets) {
+    consumeRateLimit(key, window);
+  }
+  return true;
+}
+
+/**
+ * Waits for a request slot. Short bursts (like Up next loading many shows) queue up
+ * for a moment instead of failing. Gives up after SLOT_WAIT_MS.
+ */
+async function waitForSlot(budget: Budget): Promise<TmdbError | null> {
+  const deadline = Date.now() + SLOT_WAIT_MS;
+  while (!takeSlot(budget)) {
+    if (Date.now() >= deadline) {
+      return failure(
+        "rate_limit",
+        budget === "import"
+          ? "Marquee is pacing the import so the rest of the app keeps working. It will carry on shortly."
+          : "TMDB is busy. Try again in a moment.",
+      );
+    }
+    await sleep(60 + Math.random() * 90);
+  }
+  return null;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function raiseTmdb(error: TmdbError): never {
@@ -139,10 +199,16 @@ async function runCached<T>(load: () => Promise<T>): Promise<TmdbResult<T>> {
 async function tmdbGet(
   path: string,
   query: Record<string, string>,
+  budget: Budget = "app",
 ): Promise<unknown> {
   const credentials = getTmdbCredentials();
   if (!credentials) {
     raiseTmdb(failure("missing_key"));
+  }
+  // Only real network calls reach here (cache misses), so only they use up the budget.
+  const paused = await waitForSlot(budget);
+  if (paused) {
+    raiseTmdb(paused);
   }
 
   const url = new URL(`https://api.themoviedb.org/3${path}`);
@@ -157,21 +223,13 @@ async function tmdbGet(
     url.searchParams.set("api_key", credentials.apiKey);
   }
 
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      headers,
-      signal: AbortSignal.timeout(10_000),
-    });
-  } catch (error) {
-    const timedOut =
-      error instanceof DOMException &&
-      (error.name === "TimeoutError" || error.name === "AbortError");
-    raiseTmdb(
-      timedOut
-        ? failure("unavailable", "TMDB took too long to respond. Try again.")
-        : failure("offline"),
-    );
+  let response = await fetchTmdb(url, headers);
+  if (response.status === 429) {
+    // TMDB asked us to slow down. Wait as long as it says (up to 2 s) and try once more.
+    const retryAfter = Number(response.headers.get("retry-after"));
+    const waitMs = Number.isFinite(retryAfter) && retryAfter > 0 ? Math.min(retryAfter * 1000, 2000) : 1000;
+    await sleep(waitMs);
+    response = await fetchTmdb(url, headers);
   }
 
   if (response.status === 401 || response.status === 403) {
@@ -192,6 +250,27 @@ async function tmdbGet(
   } catch {
     raiseTmdb(failure("bad_response"));
   }
+}
+
+async function fetchTmdb(url: URL, headers: Headers): Promise<Response> {
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      headers,
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch (error) {
+    const timedOut =
+      error instanceof DOMException &&
+      (error.name === "TimeoutError" || error.name === "AbortError");
+    raiseTmdb(
+      timedOut
+        ? failure("unavailable", "TMDB took too long to respond. Try again.")
+        : failure("offline"),
+    );
+  }
+
+  return response;
 }
 
 export async function searchTitles(
@@ -226,10 +305,6 @@ export async function searchTitles(
         "Too many searches. Wait a few minutes and try again.",
       ),
     };
-  }
-  const paused = upstreamPause();
-  if (paused) {
-    return { ok: false, error: paused };
   }
   return runCached(() => searchTitlesCached(normalized));
 }
@@ -387,10 +462,11 @@ async function findByImdbCached(imdbId: string): Promise<ImdbFind> {
   "use cache";
   cacheLife("hours");
 
-  const body = await tmdbGet(`/find/${imdbId}`, {
-    external_source: "imdb_id",
-    language: "en-US",
-  });
+  const body = await tmdbGet(
+    `/find/${imdbId}`,
+    { external_source: "imdb_id", language: "en-US" },
+    "import",
+  );
   const found = parseImdbFind(body);
   if (!found) {
     raiseTmdb(failure("bad_response"));
