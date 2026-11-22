@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { EpisodeBoard } from "@/components/episode-board";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { episodeKey } from "@/lib/progress";
 import type { Episode, SeasonSummary } from "@/lib/tmdb/types";
 
@@ -147,7 +148,7 @@ export function SeasonBrowser({
           );
         })}
       </nav>
-      {loading ? <p className="text-sm text-muted">Loading episodes…</p> : null}
+      {loading ? <PageSkeleton kind="episodes" /> : null}
       {notice ? (
         <p role="alert" className="text-sm text-notice">
           {notice}

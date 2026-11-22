@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 
 import { TitleLink } from "@/components/title-link";
+import { airCountdown } from "@/lib/calendar";
 import { formatAirDate } from "@/lib/format";
 import { libraryNotice } from "@/lib/library/notices";
 import { submitLibraryForm, submitterOf } from "@/lib/library/submit";
@@ -59,6 +60,7 @@ export function QueuedShow({
   title,
   posterUrl,
   next,
+  today,
   onCaughtUp,
 }: {
   csrf: string;
@@ -66,6 +68,7 @@ export function QueuedShow({
   title: string;
   posterUrl: string | null;
   next: NextCard;
+  today: string;
   onCaughtUp: () => void;
 }) {
   const [current, setCurrent] = useState(next);
@@ -112,10 +115,12 @@ export function QueuedShow({
   }
 
   const aired = formatAirDate(current.episode.airDate);
+  const countdown = airCountdown(today, current.episode.airDate);
   const meta = [
     `S${current.episode.seasonNumber} E${current.episode.episodeNumber}`,
     current.episode.name,
     aired,
+    countdown,
   ]
     .filter((part): part is string => Boolean(part))
     .join(" · ");

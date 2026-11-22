@@ -6,6 +6,7 @@ import { LibraryNotice } from "@/components/library-notice";
 import { Message } from "@/components/message";
 import { MovieStatusForm } from "@/components/movie-status-form";
 import { CollapsibleText } from "@/components/collapsible-text";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { Poster } from "@/components/poster";
 import { SchemaSetup } from "@/components/schema-setup";
 import { firstQueryValue, formatRuntime, parsePositiveInt } from "@/lib/format";
@@ -26,7 +27,7 @@ export const metadata = {
 
 export default function MoviePage({ params, searchParams }: MoviePageProps) {
   return (
-    <Suspense fallback={<p className="text-muted">Loading movie…</p>}>
+    <Suspense fallback={<PageSkeleton kind="detail" />}>
       <MovieScreen params={params} searchParams={searchParams} />
     </Suspense>
   );

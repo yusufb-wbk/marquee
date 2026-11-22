@@ -26,10 +26,12 @@ export type QueueItem = {
 export function UpNextQueue({
   csrf,
   hadWatching,
+  today,
   items,
 }: {
   csrf: string;
   hadWatching: boolean;
+  today: string;
   items: QueueItem[];
 }) {
   const [gone, setGone] = useState<number[]>([]);
@@ -38,9 +40,7 @@ export function UpNextQueue({
   if (visible.length === 0) {
     return (
       <p className="text-muted">
-        {hadWatching
-          ? "You are caught up. Finished shows stay under Watching, and one comes back here when a new episode is listed."
-          : "Nothing is queued. Search for a show and set it to Watching."}
+        {hadWatching ? "You are caught up." : "Nothing is queued."}
       </p>
     );
   }
@@ -55,6 +55,7 @@ export function UpNextQueue({
             title={item.title}
             posterUrl={item.posterUrl}
             next={item.next}
+            today={today}
             onCaughtUp={() => {
               setGone((current) =>
                 current.includes(item.showId) ? current : [...current, item.showId],

@@ -23,7 +23,7 @@ const OPTIONS: {
 }[] = [
   { status: "watching", label: "Watching", Icon: EyeIcon },
   { status: "watchlist", label: "Watchlist", Icon: BookmarkIcon },
-  { status: "stopped", label: "Stopped", Icon: PauseIcon },
+  { status: "stopped", label: "Stop", Icon: PauseIcon },
 ];
 
 export function ShowStatusControls({

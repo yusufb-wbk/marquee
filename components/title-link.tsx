@@ -21,7 +21,7 @@ export function TitleLink({
       <Poster src={posterUrl} title={title} />
       <span className="grid min-w-0 gap-1">
         <span className="font-display text-xl leading-tight">{title}</span>
-        <span className="text-sm text-muted">{meta}</span>
+        {meta ? <span className="text-sm text-muted">{meta}</span> : null}
       </span>
     </Link>
   );

@@ -7,6 +7,7 @@ import { EpisodeList } from "@/components/episode-list";
 import { LibraryNotice } from "@/components/library-notice";
 import { Message } from "@/components/message";
 import { CollapsibleText } from "@/components/collapsible-text";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { Poster } from "@/components/poster";
 import { SchemaSetup } from "@/components/schema-setup";
 import { SeasonBrowser } from "@/components/season-browser";
@@ -35,7 +36,7 @@ export const metadata = {
 
 export default function TvPage({ params, searchParams }: TvPageProps) {
   return (
-    <Suspense fallback={<p className="text-muted">Loading show…</p>}>
+    <Suspense fallback={<PageSkeleton kind="detail" />}>
       <TvScreen params={params} searchParams={searchParams} />
     </Suspense>
   );
@@ -103,7 +104,7 @@ async function TvScreen({ params, searchParams }: TvPageProps) {
             />
           )}
           {active && progress.ok ? (
-            <Suspense fallback={<p className="text-muted">Loading episodes…</p>}>
+            <Suspense fallback={<PageSkeleton kind="episodes" />}>
               <TrackedSeason
                 showId={show.id}
                 seasons={show.seasons}
@@ -113,7 +114,7 @@ async function TvScreen({ params, searchParams }: TvPageProps) {
               />
             </Suspense>
           ) : active ? (
-            <Suspense fallback={<p className="text-muted">Loading episodes…</p>}>
+            <Suspense fallback={<PageSkeleton kind="episodes" />}>
               <SeasonEpisodes showId={show.id} season={active} />
             </Suspense>
           ) : (

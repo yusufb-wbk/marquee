@@ -45,3 +45,37 @@ export function isOnOrBetween(
 ): boolean {
   return value >= start && value <= end;
 }
+
+/** Whole calendar days from `from` until `to`. Negative when `to` is earlier. */
+export function daysUntil(from: string, to: string): number | null {
+  const start = parseIsoDate(from);
+  const end = parseIsoDate(to);
+  if (!start || !end) {
+    return null;
+  }
+  const span = Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`);
+  return Math.round(span / 86_400_000);
+}
+
+export function airCountdown(today: string, airDate: string | null): string | null {
+  if (!airDate) {
+    return null;
+  }
+  const days = daysUntil(today, airDate);
+  if (days === null) {
+    return null;
+  }
+  if (days === 0) {
+    return "Today";
+  }
+  if (days === 1) {
+    return "Tomorrow";
+  }
+  if (days > 1) {
+    return `${days} days left`;
+  }
+  if (days === -1) {
+    return "Yesterday";
+  }
+  return `${Math.abs(days)} days ago`;
+}

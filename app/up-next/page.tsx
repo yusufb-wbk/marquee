@@ -1,15 +1,16 @@
 import { Suspense } from "react";
-import Link from "next/link";
 
 import { readCsrfToken } from "@/components/csrf-field";
+import { LibraryShelf, type ShelfTitle } from "@/components/library-shelf";
 import { LibraryNotice } from "@/components/library-notice";
 import { Message } from "@/components/message";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { UpNextQueue } from "@/components/up-next-queue";
 import { SchemaSetup } from "@/components/schema-setup";
-import { TitleLink } from "@/components/title-link";
-import { firstQueryValue } from "@/lib/format";
+import { isoDateUTC } from "@/lib/calendar";
+import { firstQueryValue, formatAirDate } from "@/lib/format";
 import type { ShowStatus } from "@/lib/library/database";
-import type { EpisodeWatch, TrackedMovie, TrackedShow } from "@/lib/library/queries";
+import type { TrackedMovie, TrackedShow } from "@/lib/library/queries";
 import { loadLibrary } from "@/lib/library/queries";
 import { lookupNextEpisode, watchedKeys } from "@/lib/library/up-next";
 import { showsWithANextEpisode } from "@/lib/queue";
@@ -25,7 +26,7 @@ type PageProps = {
 
 export default function UpNextPage({ searchParams }: PageProps) {
   return (
-    <Suspense fallback={<p className="text-muted">Loading up next…</p>}>
+    <Suspense fallback={<PageSkeleton kind="queue" />}>
       <UpNextScreen searchParams={searchParams} />
     </Suspense>
   );
@@ -38,12 +39,7 @@ async function UpNextScreen({ searchParams }: PageProps) {
 
   return (
     <div className="grid gap-8">
-      <header className="grid gap-2">
-        <h1 className="font-display text-4xl tracking-tight">Up next</h1>
-        <p className="leading-7 text-muted">
-          One tap marks the next episode. A show leaves this list when its current season is finished and nothing new is listed yet.
-        </p>
-      </header>
+      <h1 className="font-display text-4xl tracking-tight">Up next</h1>
       <LibraryNotice code={code} />
       {!library.ok && library.error === "schema" ? <SchemaSetup /> : null}
       {!library.ok && library.error !== "schema" ? (
@@ -62,10 +58,11 @@ async function Queue({
   library: {
     shows: TrackedShow[];
     movies: TrackedMovie[];
-    episodes: EpisodeWatch[];
+    episodes: { showTmdbId: number; seasonNumber: number; episodeNumber: number }[];
   };
 }) {
   const csrf = await readCsrfToken();
+  const today = isoDateUTC(new Date());
   const watching = library.shows.filter((show) => show.status === "watching");
   const queued = await Promise.all(
     watching.map(async (show) => {
@@ -83,6 +80,7 @@ async function Queue({
       <UpNextQueue
         csrf={csrf}
         hadWatching={watching.length > 0}
+        today={today}
         items={waiting.map((item) => ({
           showId: item.show.tmdbId,
           title: item.show.title,
@@ -90,93 +88,44 @@ async function Queue({
           next: item.next,
         }))}
       />
-      <ShowGroup
-        title="Watching"
-        shows={library.shows.filter((show) => show.status === "watching")}
+      <LibraryShelf
+        watching={showTitles(library.shows, "watching")}
+        watchlist={showTitles(library.shows, "watchlist")}
+        paused={showTitles(library.shows, "stopped")}
+        toWatch={library.movies
+          .filter((movie) => movie.status === "watchlist")
+          .map((movie) => movieTitle(movie, ""))}
+        watched={library.movies
+          .filter((movie) => movie.status === "watched")
+          .map((movie) => movieTitle(movie, watchedMeta(movie.watchedOn)))}
       />
-      <ShowGroup
-        title="Watchlist"
-        shows={library.shows.filter((show) => show.status === "watchlist")}
-      />
-      <ShowGroup
-        title="Stopped"
-        shows={library.shows.filter((show) => show.status === "stopped")}
-      />
-      <MovieGroup title="Movies to watch" movies={library.movies.filter((movie) => movie.status === "watchlist")} />
-      <MovieGroup title="Movies watched" movies={library.movies.filter((movie) => movie.status === "watched")} />
     </div>
   );
 }
 
-function ShowGroup({
-  title,
-  shows,
-}: {
-  title: string;
-  shows: TrackedShow[];
-}) {
-  return (
-    <section className="grid gap-3">
-      <h2 className="font-display text-2xl">{title}</h2>
-      {shows.length === 0 ? (
-        <p className="text-sm text-muted">None yet.</p>
-      ) : (
-        <ul className="grid gap-3">
-          {shows.map((show) => (
-            <li key={show.tmdbId}>
-              <TitleLink
-                href={`/tv/${show.tmdbId}`}
-                title={show.title}
-                posterUrl={show.posterUrl}
-                meta={statusLabel(show.status)}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
+function showTitles(shows: TrackedShow[], status: ShowStatus): ShelfTitle[] {
+  return shows
+    .filter((show) => show.status === status)
+    .map((show) => ({
+      id: show.tmdbId,
+      href: `/tv/${show.tmdbId}`,
+      title: show.title,
+      posterUrl: show.posterUrl,
+      meta: "",
+    }));
 }
 
-function MovieGroup({
-  title,
-  movies,
-}: {
-  title: string;
-  movies: TrackedMovie[];
-}) {
-  return (
-    <section className="grid gap-3">
-      <h2 className="font-display text-2xl">{title}</h2>
-      {movies.length === 0 ? (
-        <p className="text-sm text-muted">None yet.</p>
-      ) : (
-        <ul className="grid gap-3">
-          {movies.map((movie) => (
-            <li key={movie.tmdbId}>
-              <TitleLink
-                href={`/movie/${movie.tmdbId}`}
-                title={movie.title}
-                posterUrl={movie.posterUrl}
-                meta={movie.watchedOn ? `Watched ${movie.watchedOn}` : "Watchlist"}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
-      <Link href="/" className="text-sm text-muted">
-        Search for a title
-      </Link>
-    </section>
-  );
+function movieTitle(movie: TrackedMovie, meta: string): ShelfTitle {
+  return {
+    id: movie.tmdbId,
+    href: `/movie/${movie.tmdbId}`,
+    title: movie.title,
+    posterUrl: movie.posterUrl,
+    meta,
+  };
 }
 
-function statusLabel(status: ShowStatus): string {
-  if (status === "watching") {
-    return "Watching";
-  }
-  if (status === "watchlist") {
-    return "Watchlist";
-  }
-  return "Stopped";
+function watchedMeta(watchedOn: string | null): string {
+  const label = formatAirDate(watchedOn);
+  return label ? `Watched ${label}` : "";
 }

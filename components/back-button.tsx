@@ -15,9 +15,9 @@ export function BackButton({ fallback = "/up-next" }: { fallback?: string }) {
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex h-11 items-center gap-2 rounded-xl border border-line px-3 text-sm font-semibold"
+      className="inline-flex h-9 w-fit items-center justify-self-start gap-1 rounded-full border border-line px-2.5 text-sm font-semibold"
     >
-      <ChevronLeftIcon className="h-5 w-5" />
+      <ChevronLeftIcon className="h-4 w-4" />
       Back
     </button>
   );

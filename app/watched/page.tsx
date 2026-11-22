@@ -5,6 +5,7 @@ import { readCsrfToken } from "@/components/csrf-field";
 import { LibraryNotice } from "@/components/library-notice";
 import { Message } from "@/components/message";
 import { SchemaSetup } from "@/components/schema-setup";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { WatchStats } from "@/components/watch-stats";
 import { WatchedBrowser } from "@/components/watched-browser";
 import { firstQueryValue } from "@/lib/format";
@@ -22,7 +23,7 @@ type PageProps = {
 
 export default function WatchedPage({ searchParams }: PageProps) {
   return (
-    <Suspense fallback={<p className="text-muted">Loading what you have watched…</p>}>
+    <Suspense fallback={<PageSkeleton kind="browse" />}>
       <WatchedScreen searchParams={searchParams} />
     </Suspense>
   );

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import { Message } from "@/components/message";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { ResultList } from "@/components/result-list";
 import { requireUser } from "@/lib/require-user";
 import { listPopular, listTrending } from "@/lib/tmdb/client";
@@ -12,7 +13,7 @@ export const metadata = {
 
 export default function DiscoverPage() {
   return (
-    <Suspense fallback={<p className="text-muted">Loading discover…</p>}>
+    <Suspense fallback={<PageSkeleton kind="browse" />}>
       <DiscoverScreen />
     </Suspense>
   );

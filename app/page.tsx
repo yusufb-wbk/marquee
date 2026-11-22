@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 
 import { Message } from "@/components/message";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { ResultList } from "@/components/result-list";
 import { SearchForm } from "@/components/search-form";
 import { firstQueryValue } from "@/lib/format";
@@ -19,7 +20,7 @@ type HomePageProps = {
 
 export default function HomePage({ searchParams }: HomePageProps) {
   return (
-    <Suspense fallback={<p className="text-muted">Loading search…</p>}>
+    <Suspense fallback={<PageSkeleton kind="browse" />}>
       <SearchScreen searchParams={searchParams} />
     </Suspense>
   );
@@ -45,7 +46,7 @@ async function SearchScreen({ searchParams }: HomePageProps) {
           Use 2 to 80 characters.
         </Message>
       ) : query ? (
-        <Suspense fallback={<p className="text-muted">Searching…</p>}>
+        <Suspense fallback={<PageSkeleton kind="results" />}>
           <SearchResults query={query} userId={user.id} />
         </Suspense>
       ) : null}

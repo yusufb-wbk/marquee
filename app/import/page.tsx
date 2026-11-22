@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { readCsrfToken } from "@/components/csrf-field";
 import { ImdbImportForm } from "@/components/imdb-import-form";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { requireUser } from "@/lib/require-user";
 
 export const metadata = {
@@ -11,7 +12,7 @@ export const metadata = {
 
 export default function ImportPage() {
   return (
-    <Suspense fallback={<p className="text-muted">Loading import…</p>}>
+    <Suspense fallback={<PageSkeleton kind="form" />}>
       <ImportScreen />
     </Suspense>
   );

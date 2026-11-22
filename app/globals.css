@@ -73,3 +73,24 @@ dialog {
 dialog::backdrop {
   background: rgb(0 0 0 / 0.72);
 }
+
+.skeleton {
+  background-color: var(--line);
+  animation: skeleton-fade 1.6s ease-in-out infinite;
+}
+
+@keyframes skeleton-fade {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}

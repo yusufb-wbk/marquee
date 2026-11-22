@@ -5,6 +5,7 @@ import { LoginForm } from "@/app/login/login-form";
 import { CsrfField } from "@/components/csrf-field";
 import { authAlert } from "@/app/login/messages";
 import { Message } from "@/components/message";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { SetupPanel } from "@/components/setup-panel";
 import { getAuthStatus } from "@/lib/auth";
 import { firstQueryValue } from "@/lib/format";
@@ -19,7 +20,7 @@ type LoginPageProps = {
 
 export default function LoginPage({ searchParams }: LoginPageProps) {
   return (
-    <Suspense fallback={<p className="text-muted">Loading sign in…</p>}>
+    <Suspense fallback={<PageSkeleton kind="form" />}>
       <LoginGate searchParams={searchParams} />
     </Suspense>
   );

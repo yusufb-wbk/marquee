@@ -1,3 +1,5 @@
+import { PageSkeleton } from "@/components/page-skeleton";
+
 export default function Loading() {
-  return <p className="text-muted">Loading…</p>;
+  return <PageSkeleton kind="browse" />;
 }
