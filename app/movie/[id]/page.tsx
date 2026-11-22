@@ -41,7 +41,8 @@ async function MovieScreen({ params, searchParams }: MoviePageProps) {
     notFound();
   }
 
-  const result = await getMovie(id);
+  // The movie and your progress on it do not depend on each other, so load them together.
+  const [result, progressResult] = await Promise.all([getMovie(id), loadMovieProgress(user.id, id)]);
   if (!result.ok) {
     if (result.error.kind === "not_found") {
       notFound();
@@ -53,7 +54,7 @@ async function MovieScreen({ params, searchParams }: MoviePageProps) {
     );
   }
 
-  const progress = await loadMovieProgress(user.id, result.data.id);
+  const progress = progressResult;
   const tracked = progress.ok ? progress.data : null;
   const libraryCode = firstQueryValue((await searchParams).library);
 

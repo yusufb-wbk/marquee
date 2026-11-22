@@ -52,7 +52,11 @@ async function TvScreen({ params, searchParams }: TvPageProps) {
     notFound();
   }
 
-  const showResult = await getTvShow(id);
+  // The show and your progress on it do not depend on each other, so load them together.
+  const [showResult, progressResult] = await Promise.all([
+    getTvShow(id),
+    loadShowProgress(user.id, id),
+  ]);
   if (!showResult.ok) {
     if (showResult.error.kind === "not_found") {
       notFound();
@@ -71,7 +75,7 @@ async function TvScreen({ params, searchParams }: TvPageProps) {
   const requested =
     requestedRaw.length > 0 ? parseSeasonNumber(requestedRaw) : null;
   const active = chooseSeason(show.seasons, requestedRaw, requested);
-  const progress = await loadShowProgress(user.id, show.id);
+  const progress = progressResult;
   const nextPath = active
     ? `/tv/${show.id}?season=${active.seasonNumber}`
     : `/tv/${show.id}`;
