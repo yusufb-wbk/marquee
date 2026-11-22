@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { confirmedThisYear, showsAiringThisYear } from "./calendar.ts";
+import { confirmedThisYear, showsAiringThisYear, showsEndedForNow } from "./calendar.ts";
 import { showsWithANextEpisode } from "./queue.ts";
 
 describe("up next queue", () => {
@@ -34,6 +34,19 @@ describe("up next queue", () => {
     assert.deepEqual(
       due.map((item) => item.id),
       [1],
+    );
+    const ended = showsEndedForNow(
+      [
+        { id: 1, next: { state: "ready", episode: { airDate: "2026-12-03" } } },
+        { id: 2, next: { state: "ready", episode: { airDate: null } } },
+        { id: 3, next: { state: "caught_up" } },
+        { id: 4, next: { state: "error" } },
+      ],
+      "2026-11-22",
+    );
+    assert.deepEqual(
+      ended.map((item) => item.id),
+      [2, 3],
     );
   });
 });

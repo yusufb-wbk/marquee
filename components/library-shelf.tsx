@@ -15,10 +15,12 @@ export type ShelfTitle = {
 
 export function LibraryShelf({
   watchlist,
+  ended,
   paused,
   toWatch,
 }: {
   watchlist: ShelfTitle[];
+  ended: ShelfTitle[];
   paused: ShelfTitle[];
   toWatch: ShelfTitle[];
 }) {
@@ -45,6 +47,15 @@ export function LibraryShelf({
       {side === "shows" ? (
         <div className="grid gap-8">
           <OpenGroup title="Shows" titles={watchlist} empty="No shows on your watchlist." />
+          {ended.length > 0 ? (
+            <details className="grid gap-3">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+                <span className="font-display text-2xl">Ended</span>
+                <span className="text-sm tabular-nums text-muted">{ended.length}</span>
+              </summary>
+              <TitleList titles={ended} />
+            </details>
+          ) : null}
           {paused.length > 0 ? (
             <details className="grid gap-3">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">

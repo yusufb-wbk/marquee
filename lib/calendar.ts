@@ -60,12 +60,29 @@ export function confirmedThisYear(airDate: string | null, today: string): boolea
 export function showsAiringThisYear<
   T extends { next: { state: string; episode?: { airDate: string | null } } },
 >(items: readonly T[], today: string): T[] {
+  return items.filter((item) => episodeAiringThisYear(item.next, today));
+}
+
+/** Watching shows with no dated episode left in the coming year. */
+export function showsEndedForNow<
+  T extends { next: { state: string; episode?: { airDate: string | null } } },
+>(items: readonly T[], today: string): T[] {
   return items.filter((item) => {
-    if (item.next.state !== "ready") {
+    if (item.next.state === "error") {
       return false;
     }
-    return confirmedThisYear(item.next.episode?.airDate ?? null, today);
+    return !episodeAiringThisYear(item.next, today);
   });
+}
+
+function episodeAiringThisYear(
+  next: { state: string; episode?: { airDate: string | null } },
+  today: string,
+): boolean {
+  if (next.state !== "ready") {
+    return false;
+  }
+  return confirmedThisYear(next.episode?.airDate ?? null, today);
 }
 
 /** Whole calendar days from `from` until `to`. Negative when `to` is earlier. */
