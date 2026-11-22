@@ -1,19 +1,39 @@
+import { YourRatingChip } from "@/components/your-rating-chip";
+import { readCsrfToken } from "@/components/csrf-field";
 import { getExternalRatings } from "@/lib/mdblist";
 import { RATING_LABELS, scoreWord, tmdbRating, type ExternalRating } from "@/lib/ratings";
 import { getTitleExtras } from "@/lib/tmdb/client";
 
 /** Scores from other sites under the title card. Falls back to TMDB's score without an MDBList key. */
-export async function RatingsStrip({ kind, id }: { kind: "movie" | "tv"; id: number }) {
-  const [external, extras] = await Promise.all([getExternalRatings(kind, id), getTitleExtras(kind, id)]);
+export async function RatingsStrip({
+  kind,
+  id,
+  yours,
+}: {
+  kind: "movie" | "tv";
+  id: number;
+  /** Your own rating (stored 1–20) and whether the title is in your list. Omit to hide the chip. */
+  yours?: { stored: number | null; tracked: boolean };
+}) {
+  const [external, extras, csrf] = await Promise.all([
+    getExternalRatings(kind, id),
+    getTitleExtras(kind, id),
+    yours ? readCsrfToken() : Promise.resolve(""),
+  ]);
   const fallback = extras.ok ? tmdbRating(extras.data.tmdbScore, extras.data.tmdbVotes) : [];
   const ratings = external && external.ratings.length > 0 ? external.ratings : fallback;
   const combined = external?.score ?? null;
-  if (ratings.length === 0 && combined === null) {
+  if (ratings.length === 0 && combined === null && !yours) {
     return null;
   }
 
   return (
     <ul aria-label="Ratings" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
+      {yours ? (
+        <li className="shrink-0">
+          <YourRatingChip csrf={csrf} kind={kind} id={id} stored={yours.stored} tracked={yours.tracked} />
+        </li>
+      ) : null}
       {combined !== null ? (
         <li className="shrink-0">
           <CombinedChip score={combined} />

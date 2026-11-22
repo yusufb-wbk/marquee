@@ -8,11 +8,9 @@ import {
   EyeIcon,
   PauseIcon,
 } from "@/components/icons";
-import { RatingField } from "@/components/rating-field";
 import type { ShowStatus } from "@/lib/library/database";
 import { libraryNotice } from "@/lib/library/notices";
 import { submitLibraryForm, submitterOf } from "@/lib/library/submit";
-import { parseRatingField } from "@/lib/rating";
 import { subscribeShowStatus } from "@/lib/show-status-bus";
 
 const OPTIONS: {
@@ -29,20 +27,16 @@ export function ShowStatusControls({
   csrf,
   showId,
   current,
-  rating,
   nextPath,
   finished,
 }: {
   csrf: string;
   showId: number;
   current: ShowStatus | null;
-  rating: number | null;
   nextPath: string;
   finished: boolean;
 }) {
   const [status, setStatus] = useState(current);
-  const [committedRating, setCommittedRating] = useState(rating);
-  const [ratingVersion, setRatingVersion] = useState(0);
   const [pending, setPending] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -56,7 +50,6 @@ export function ShowStatusControls({
     }
     const submitter = submitterOf(event);
     const value = submitter?.value ?? "";
-    const ratingField = new FormData(event.currentTarget).get("rating");
     setPending(submitter?.dataset.action ?? value);
     setSaved(false);
     setNotice(null);
@@ -64,12 +57,7 @@ export function ShowStatusControls({
     setPending(null);
     if (!result.ok) {
       setNotice(libraryNotice(result.error)?.title ?? "That change was not saved");
-      setRatingVersion((version) => version + 1);
       return;
-    }
-    const parsed = parseRatingField(ratingField);
-    if (parsed.ok) {
-      setCommittedRating(parsed.rating);
     }
     if (value === "remove") {
       setStatus(null);
@@ -92,17 +80,6 @@ export function ShowStatusControls({
       <input type="hidden" name="tmdbId" value={showId} />
       <input type="hidden" name="next" value={nextPath} />
       <div className="grid gap-3 @2xl:grid-cols-[auto_minmax(0,1fr)] @2xl:items-center @2xl:gap-5">
-        <RatingField
-          key={`${ratingVersion}:${committedRating ?? "none"}`}
-          stored={committedRating}
-          submit={{
-            name: "status",
-            value: status ?? "watching",
-            action: "rating",
-            pending: pending !== null,
-            persistRemove: status !== null,
-          }}
-        />
         <div className={finished ? "grid grid-cols-2 gap-2" : "grid grid-cols-3 gap-2"}>
           {OPTIONS.filter((option) => !finished || option.status !== "stopped").map((option) => {
             const selected =

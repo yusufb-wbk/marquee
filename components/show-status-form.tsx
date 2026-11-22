@@ -5,13 +5,11 @@ import type { ShowStatus } from "@/lib/library/database";
 export async function ShowStatusForm({
   showId,
   current,
-  rating,
   nextPath,
   finished,
 }: {
   showId: number;
   current: ShowStatus | null;
-  rating: number | null;
   nextPath: string;
   finished: boolean;
 }) {
@@ -21,7 +19,6 @@ export async function ShowStatusForm({
       csrf={csrf}
       showId={showId}
       current={current}
-      rating={rating}
       nextPath={nextPath}
       finished={finished}
     />

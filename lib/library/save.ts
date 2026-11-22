@@ -144,7 +144,8 @@ export async function saveShowStatus(
         posterUrl: show.posterUrl,
         genres: show.genres,
       }),
-      rating: rating.rating,
+      // No rating field means "leave it as it is"; an empty one clears it.
+      ...(ratingRaw === null ? {} : { rating: rating.rating }),
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id,tmdb_id" },
@@ -212,7 +213,8 @@ export async function saveMovieStatus(
       }),
       runtime_minutes: movie.runtime,
       watched_on: watchedOn,
-      rating: rating.rating,
+      // No rating field means "leave it as it is"; an empty one clears it.
+      ...(ratingRaw === null ? {} : { rating: rating.rating }),
       ...(typeof noteRaw === "string" ? { note: note.note } : {}),
       updated_at: new Date().toISOString(),
     },

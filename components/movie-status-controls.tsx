@@ -3,18 +3,15 @@
 import { useState, type FormEvent } from "react";
 
 import { BookmarkIcon, CheckIcon, CloseIcon } from "@/components/icons";
-import { RatingField } from "@/components/rating-field";
 import type { MovieStatus } from "@/lib/library/database";
 import { libraryNotice } from "@/lib/library/notices";
 import { submitLibraryForm, submitterOf } from "@/lib/library/submit";
-import { parseRatingField } from "@/lib/rating";
 
 export function MovieStatusControls({
   csrf,
   movieId,
   status,
   watchedOn,
-  rating,
   today,
   nextPath,
 }: {
@@ -22,13 +19,10 @@ export function MovieStatusControls({
   movieId: number;
   status: MovieStatus | null;
   watchedOn: string | null;
-  rating: number | null;
   today: string;
   nextPath: string;
 }) {
   const [current, setCurrent] = useState(status);
-  const [committedRating, setCommittedRating] = useState(rating);
-  const [ratingVersion, setRatingVersion] = useState(0);
   const [pending, setPending] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -40,7 +34,6 @@ export function MovieStatusControls({
     }
     const submitter = submitterOf(event);
     const value = submitter?.value ?? "";
-    const ratingField = new FormData(event.currentTarget).get("rating");
     setPending(value);
     setSaved(false);
     setNotice(null);
@@ -48,12 +41,7 @@ export function MovieStatusControls({
     setPending(null);
     if (!result.ok) {
       setNotice(libraryNotice(result.error)?.title ?? "That change was not saved");
-      setRatingVersion((version) => version + 1);
       return;
-    }
-    const parsed = parseRatingField(ratingField);
-    if (parsed.ok) {
-      setCommittedRating(parsed.rating);
     }
     if (value === "remove") {
       setCurrent(null);
@@ -73,31 +61,17 @@ export function MovieStatusControls({
       <input type="hidden" name="csrf" value={csrf} />
       <input type="hidden" name="tmdbId" value={movieId} />
       <input type="hidden" name="next" value={nextPath} />
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="grid w-full max-w-56 gap-2 text-sm font-medium">
+      <div className="grid min-w-0 gap-3">
+        <label className="grid min-w-0 gap-2 text-sm font-medium">
           Watched on
           <input
             type="date"
             name="watchedOn"
             defaultValue={watchedOn ?? today}
-            className="date-field h-12 w-full rounded-xl border border-line bg-background px-3 text-base font-normal text-foreground"
+            // iOS gives date inputs an intrinsic width; min-w-0 and max-w-full keep it inside the card.
+            className="date-field h-12 w-full min-w-0 max-w-full appearance-none rounded-xl border border-line bg-background px-3 text-base font-normal text-foreground"
           />
         </label>
-        <RatingField
-        key={`${ratingVersion}:${committedRating ?? "none"}`}
-        stored={committedRating}
-        submit={
-          current
-            ? {
-                name: "status",
-                value: current,
-                action: current,
-                pending: pending !== null,
-                persistRemove: true,
-              }
-            : null
-        }
-      />
       </div>
       <div className="grid grid-cols-2 gap-2">
         <button

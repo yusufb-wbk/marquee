@@ -7,13 +7,11 @@ export async function MovieStatusForm({
   movieId,
   status,
   watchedOn,
-  rating,
   nextPath,
 }: {
   movieId: number;
   status: MovieStatus | null;
   watchedOn: string | null;
-  rating: number | null;
   nextPath: string;
 }) {
   const csrf = await readCsrfToken();
@@ -23,7 +21,6 @@ export async function MovieStatusForm({
       movieId={movieId}
       status={status}
       watchedOn={watchedOn}
-      rating={rating}
       today={isoDateUTC(new Date())}
       nextPath={nextPath}
     />

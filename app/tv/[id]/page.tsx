@@ -91,13 +91,19 @@ async function TvScreen({ params, searchParams }: TvPageProps) {
         </Message>
       ) : null}
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
-        <ShowHeader show={show} />
+        <ShowHeader
+          show={show}
+          yours={
+            progress.ok
+              ? { stored: progress.data.show?.rating ?? null, tracked: progress.data.show !== null }
+              : undefined
+          }
+        />
         {progress.ok || progress.error === "schema" ? (
           <div className="lg:col-start-2 lg:row-start-1 lg:row-span-2">
             <ShowStatusForm
               showId={show.id}
               current={progress.ok ? (progress.data.show?.status ?? null) : null}
-              rating={progress.ok ? (progress.data.show?.rating ?? null) : null}
               nextPath={nextPath}
               finished={seriesFinished(
                 show.status,
@@ -168,7 +174,13 @@ function chooseSeason(
   );
 }
 
-function ShowHeader({ show }: { show: TvShow }) {
+function ShowHeader({
+  show,
+  yours,
+}: {
+  show: TvShow;
+  yours?: { stored: number | null; tracked: boolean };
+}) {
   // The airing state gets its own banner, so only the year stays in the facts line.
   const facts = [show.year].filter((fact): fact is string => Boolean(fact));
 
@@ -185,7 +197,7 @@ function ShowHeader({ show }: { show: TvShow }) {
         banner={showBanner(show, isoDateUTC(new Date()))}
       />
       <Suspense fallback={<RatingsStripSkeleton />}>
-        <RatingsStrip kind="tv" id={show.id} />
+        <RatingsStrip kind="tv" id={show.id} yours={yours} />
       </Suspense>
     </div>
   );

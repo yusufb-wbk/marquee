@@ -72,7 +72,11 @@ async function MovieScreen({ params, searchParams }: MoviePageProps) {
         <div className="grid gap-3">
           <MovieHeader movie={result.data} />
           <Suspense fallback={<RatingsStripSkeleton />}>
-            <RatingsStrip kind="movie" id={result.data.id} />
+            <RatingsStrip
+              kind="movie"
+              id={result.data.id}
+              yours={progress.ok ? { stored: tracked?.rating ?? null, tracked: tracked !== null } : undefined}
+            />
           </Suspense>
         </div>
         {progress.ok || progress.error === "schema" ? (
@@ -80,7 +84,6 @@ async function MovieScreen({ params, searchParams }: MoviePageProps) {
             movieId={result.data.id}
             status={tracked?.status ?? null}
             watchedOn={tracked?.watchedOn ?? null}
-            rating={tracked?.rating ?? null}
             nextPath={`/movie/${result.data.id}`}
           />
         ) : null}
