@@ -15,7 +15,7 @@ export function ResultList({ titles }: { titles: SearchTitle[] }) {
   }
 
   return (
-    <ul className="grid gap-3">
+    <ul className="grid gap-3 lg:grid-cols-2">
       {titles.map((title) => {
         const href =
           title.mediaType === "tv" ? `/tv/${title.id}` : `/movie/${title.id}`;

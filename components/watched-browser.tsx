@@ -193,7 +193,7 @@ export function WatchedBrowser({
       ) : visible.length === 0 ? (
         <p className="text-muted">Nothing matches these filters.</p>
       ) : (
-        <ul className="grid gap-3">
+        <ul className="grid gap-3 lg:grid-cols-2">
           {visible.map((title) => (
             <li
               key={`${title.kind}-${title.id}`}

@@ -61,7 +61,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <div className="grid min-h-dvh grid-rows-[auto_1fr_auto] pb-28">
           <header className="border-b border-line">
             <div className="marquee-rail" aria-hidden="true" />
-            <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 px-4 py-4">
+            <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-4">
               <Link href="/up-next" className="font-display text-2xl tracking-tight">
                 Marquee
               </Link>
@@ -73,11 +73,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               </div>
             </div>
           </header>
-          <main id="main" className="mx-auto w-full max-w-3xl px-4 py-6">
+          <main id="main" className="mx-auto w-full max-w-6xl px-4 py-6 lg:px-8">
             {children}
           </main>
           <footer className="border-t border-line">
-            <div className="mx-auto w-full max-w-3xl px-4 py-6">
+            <div className="mx-auto w-full max-w-6xl px-4 py-6 lg:px-8">
               <TmdbAttribution />
             </div>
           </footer>

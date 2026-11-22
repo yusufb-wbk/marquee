@@ -6,10 +6,9 @@ import { readCsrfToken } from "@/components/csrf-field";
 import { EpisodeList } from "@/components/episode-list";
 import { LibraryNotice } from "@/components/library-notice";
 import { Message } from "@/components/message";
-import { CollapsibleText } from "@/components/collapsible-text";
 import { PageSkeleton } from "@/components/page-skeleton";
-import { Poster } from "@/components/poster";
 import { SchemaSetup } from "@/components/schema-setup";
+import { TitleStage } from "@/components/title-stage";
 import { SeasonBrowser } from "@/components/season-browser";
 import { SeasonNav } from "@/components/season-nav";
 import { ShowStatusForm } from "@/components/show-status-form";
@@ -83,19 +82,22 @@ async function TvScreen({ params, searchParams }: TvPageProps) {
           The episode list is still here. Tracking changes may not save.
         </Message>
       ) : null}
-      <ShowHeader show={show} />
-      {progress.ok || progress.error === "schema" ? (
-        <ShowStatusForm
-          showId={show.id}
-          current={progress.ok ? (progress.data.show?.status ?? null) : null}
-          rating={progress.ok ? (progress.data.show?.rating ?? null) : null}
-          nextPath={nextPath}
-        />
-      ) : null}
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
+        <ShowHeader show={show} />
+        {progress.ok || progress.error === "schema" ? (
+          <div className="lg:col-start-2 lg:row-start-1 lg:row-span-2">
+            <ShowStatusForm
+              showId={show.id}
+              current={progress.ok ? (progress.data.show?.status ?? null) : null}
+              rating={progress.ok ? (progress.data.show?.rating ?? null) : null}
+              nextPath={nextPath}
+            />
+          </div>
+        ) : null}
       {show.seasons.length === 0 ? (
         <p className="text-muted">TMDB has no seasons for this show yet.</p>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid gap-4 lg:col-start-1">
           {progress.ok ? null : (
             <SeasonNav
               showId={show.id}
@@ -124,6 +126,7 @@ async function TvScreen({ params, searchParams }: TvPageProps) {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -148,32 +151,16 @@ function ShowHeader({ show }: { show: TvShow }) {
   const facts = [show.year, show.status].filter((fact): fact is string => Boolean(fact));
 
   return (
-    <div className="flex items-start gap-4">
-      <div className="shrink-0">
-        <Poster src={show.posterUrl} title={show.name} size="large" />
-      </div>
-      <div className="grid min-w-0 flex-1 gap-2">
-        <h1 className="font-display text-3xl tracking-tight sm:text-4xl">{show.name}</h1>
-        {facts.length > 0 ? (
-          <p className="text-sm text-muted">{facts.join(" · ")}</p>
-        ) : null}
-        {show.genres.length > 0 ? (
-          <ul className="flex flex-wrap gap-2">
-            {show.genres.map((genre) => (
-              <li
-                key={genre}
-                className="rounded-full border border-line px-2 py-1 text-xs text-muted"
-              >
-                {genre}
-              </li>
-            ))}
-          </ul>
-        ) : null}
-        <CollapsibleText
-          text={titleOverview(show.overview)}
-          className="text-sm leading-6 text-muted"
-        />
-      </div>
+    <div className="lg:col-start-1 lg:row-start-1">
+      <TitleStage
+        kind="Show"
+        title={show.name}
+        posterUrl={show.posterUrl}
+        backdropUrl={show.backdropUrl}
+        facts={facts}
+        genres={show.genres}
+        overview={titleOverview(show.overview)}
+      />
     </div>
   );
 }

@@ -134,7 +134,7 @@ function OpenGroup({
 
 function TitleList({ titles }: { titles: ShelfTitle[] }) {
   return (
-    <ul className="grid gap-3">
+    <ul className="grid gap-3 lg:grid-cols-2">
       {titles.map((title) => (
         <li key={title.id}>
           <TitleLink

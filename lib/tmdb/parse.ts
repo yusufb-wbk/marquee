@@ -10,6 +10,7 @@ import type {
 } from "@/lib/tmdb/types";
 
 const POSTER_SIZE = "w342";
+const BACKDROP_SIZE = "w1280";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -72,6 +73,13 @@ function posterUrl(path: string | null): string | null {
     return null;
   }
   return `https://image.tmdb.org/t/p/${POSTER_SIZE}${path}`;
+}
+
+function backdropUrl(path: string | null): string | null {
+  if (!path) {
+    return null;
+  }
+  return `https://image.tmdb.org/t/p/${BACKDROP_SIZE}${path}`;
 }
 
 function readGenres(value: unknown): string[] {
@@ -174,6 +182,7 @@ export function parseTvShow(body: unknown): TvShow | null {
     year: yearFromDate(readDate(body.first_air_date)),
     overview: readText(body.overview),
     posterUrl: posterUrl(readPosterPath(body.poster_path)),
+    backdropUrl: backdropUrl(readPosterPath(body.backdrop_path)),
     status: status.length > 0 ? status : null,
     genres: readGenres(body.genres),
     seasons,
@@ -286,6 +295,7 @@ export function parseMovie(body: unknown): Movie | null {
     year: yearFromDate(readDate(body.release_date)),
     overview: readText(body.overview),
     posterUrl: posterUrl(readPosterPath(body.poster_path)),
+    backdropUrl: backdropUrl(readPosterPath(body.backdrop_path)),
     runtime: readRuntime(body.runtime),
     status: status.length > 0 ? status : null,
     genres: readGenres(body.genres),

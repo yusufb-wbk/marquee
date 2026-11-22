@@ -39,7 +39,7 @@ export function AppNav() {
       aria-label="Sections"
       className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-background pb-[env(safe-area-inset-bottom)]"
     >
-      <ul className="mx-auto flex w-full max-w-3xl gap-1 px-2 py-1.5">
+      <ul className="mx-auto flex w-full max-w-6xl gap-1 px-2 py-1.5 lg:px-6">
         {LINKS.map((link) => {
           const current = isCurrent(pathname, link.href);
           const Icon = link.Icon;

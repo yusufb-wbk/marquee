@@ -46,7 +46,7 @@ export function UpNextQueue({
   }
 
   return (
-    <ul className="grid gap-3">
+    <ul className="grid gap-3 lg:grid-cols-2">
       {visible.map((item) => (
         <li key={item.showId}>
           <QueuedShow

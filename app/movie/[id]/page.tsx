@@ -5,10 +5,9 @@ import { BackButton } from "@/components/back-button";
 import { LibraryNotice } from "@/components/library-notice";
 import { Message } from "@/components/message";
 import { MovieStatusForm } from "@/components/movie-status-form";
-import { CollapsibleText } from "@/components/collapsible-text";
 import { PageSkeleton } from "@/components/page-skeleton";
-import { Poster } from "@/components/poster";
 import { SchemaSetup } from "@/components/schema-setup";
+import { TitleStage } from "@/components/title-stage";
 import { firstQueryValue, formatRuntime, parsePositiveInt } from "@/lib/format";
 import { titleOverview } from "@/lib/overview";
 import { loadMovieProgress } from "@/lib/library/queries";
@@ -66,16 +65,18 @@ async function MovieScreen({ params, searchParams }: MoviePageProps) {
           Try again in a moment.
         </Message>
       ) : null}
-      <MovieHeader movie={result.data} />
-      {progress.ok || progress.error === "schema" ? (
-        <MovieStatusForm
-          movieId={result.data.id}
-          status={tracked?.status ?? null}
-          watchedOn={tracked?.watchedOn ?? null}
-          rating={tracked?.rating ?? null}
-          nextPath={`/movie/${result.data.id}`}
-        />
-      ) : null}
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
+        <MovieHeader movie={result.data} />
+        {progress.ok || progress.error === "schema" ? (
+          <MovieStatusForm
+            movieId={result.data.id}
+            status={tracked?.status ?? null}
+            watchedOn={tracked?.watchedOn ?? null}
+            rating={tracked?.rating ?? null}
+            nextPath={`/movie/${result.data.id}`}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -87,33 +88,14 @@ function MovieHeader({ movie }: { movie: Movie }) {
   );
 
   return (
-    <div className="flex items-start gap-4">
-      <div className="shrink-0">
-        <Poster src={movie.posterUrl} title={movie.title} size="large" />
-      </div>
-      <div className="grid min-w-0 flex-1 gap-2">
-        <p className="text-xs uppercase tracking-wide text-muted">Movie</p>
-        <h1 className="font-display text-3xl tracking-tight sm:text-4xl">{movie.title}</h1>
-        {details.length > 0 ? (
-          <p className="text-sm text-muted">{details.join(" · ")}</p>
-        ) : null}
-        {movie.genres.length > 0 ? (
-          <ul className="flex flex-wrap gap-2">
-            {movie.genres.map((genre) => (
-              <li
-                key={genre}
-                className="rounded-full border border-line px-2 py-1 text-xs text-muted"
-              >
-                {genre}
-              </li>
-            ))}
-          </ul>
-        ) : null}
-        <CollapsibleText
-          text={titleOverview(movie.overview)}
-          className="text-sm leading-6 text-muted"
-        />
-      </div>
-    </div>
+    <TitleStage
+      kind="Movie"
+      title={movie.title}
+      posterUrl={movie.posterUrl}
+      backdropUrl={movie.backdropUrl}
+      facts={details}
+      genres={movie.genres}
+      overview={titleOverview(movie.overview)}
+    />
   );
 }

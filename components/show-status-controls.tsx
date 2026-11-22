@@ -79,7 +79,12 @@ export function ShowStatusControls({
   }
 
   return (
-    <form action="/library/show" method="post" className="grid gap-3" onSubmit={onSubmit}>
+    <form
+      action="/library/show"
+      method="post"
+      className="grid max-w-lg gap-3 rounded-3xl border border-line bg-card p-4 sm:p-5 lg:max-w-none"
+      onSubmit={onSubmit}
+    >
       <input type="hidden" name="csrf" value={csrf} />
       <input type="hidden" name="tmdbId" value={showId} />
       <input type="hidden" name="next" value={nextPath} />

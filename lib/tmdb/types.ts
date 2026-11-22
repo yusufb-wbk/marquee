@@ -50,6 +50,7 @@ export type TvShow = {
   year: string | null;
   overview: string;
   posterUrl: string | null;
+  backdropUrl: string | null;
   status: string | null;
   genres: string[];
   seasons: SeasonSummary[];
@@ -77,6 +78,7 @@ export type Movie = {
   year: string | null;
   overview: string;
   posterUrl: string | null;
+  backdropUrl: string | null;
   runtime: number | null;
   status: string | null;
   genres: string[];
