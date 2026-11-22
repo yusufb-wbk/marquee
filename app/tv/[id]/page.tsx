@@ -7,7 +7,9 @@ import { EpisodeList } from "@/components/episode-list";
 import { LibraryNotice } from "@/components/library-notice";
 import { Message } from "@/components/message";
 import { PageSkeleton } from "@/components/page-skeleton";
+import { RatingsStrip, RatingsStripSkeleton } from "@/components/ratings-strip";
 import { SchemaSetup } from "@/components/schema-setup";
+import { TitleCredits, TitleCreditsSkeleton } from "@/components/title-credits";
 import { TitleStage, type StageBanner } from "@/components/title-stage";
 import { SeasonBrowser } from "@/components/season-browser";
 import { SeasonNav } from "@/components/season-nav";
@@ -115,6 +117,8 @@ async function TvScreen({ params, searchParams }: TvPageProps) {
           {active && progress.ok ? (
             <Suspense fallback={<PageSkeleton kind="episodes" />}>
               <TrackedSeason
+                // Seasons start closed, unless the link names one (?season=3).
+                startOpen={requestedRaw.length > 0}
                 showId={show.id}
                 seasons={show.seasons}
                 season={active}
@@ -137,6 +141,9 @@ async function TvScreen({ params, searchParams }: TvPageProps) {
         </div>
       )}
       </div>
+      <Suspense fallback={<TitleCreditsSkeleton />}>
+        <TitleCredits kind="tv" id={show.id} title={show.name} />
+      </Suspense>
     </div>
   );
 }
@@ -162,7 +169,7 @@ function ShowHeader({ show }: { show: TvShow }) {
   const facts = [show.year].filter((fact): fact is string => Boolean(fact));
 
   return (
-    <div className="lg:col-start-1 lg:row-start-1">
+    <div className="grid gap-3 lg:col-start-1 lg:row-start-1">
       <TitleStage
         kind="Show"
         title={show.name}
@@ -173,6 +180,9 @@ function ShowHeader({ show }: { show: TvShow }) {
         overview={titleOverview(show.overview)}
         banner={showBanner(show, isoDateUTC(new Date()))}
       />
+      <Suspense fallback={<RatingsStripSkeleton />}>
+        <RatingsStrip kind="tv" id={show.id} />
+      </Suspense>
     </div>
   );
 }
@@ -218,12 +228,14 @@ function showBanner(show: TvShow, today: string): StageBanner | null {
 }
 
 async function TrackedSeason({
+  startOpen,
   showId,
   seasons,
   season,
   watches,
   showTracked,
 }: {
+  startOpen: boolean;
   showId: number;
   seasons: SeasonSummary[];
   season: SeasonSummary;
@@ -253,6 +265,7 @@ async function TrackedSeason({
       showId={showId}
       seasons={seasons}
       initialSeasonNumber={season.seasonNumber}
+      startOpen={startOpen}
       initialSeasonName={result.data.name}
       initialEpisodes={result.data.episodes}
       initialWatched={watches}

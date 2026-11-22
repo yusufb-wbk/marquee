@@ -6,7 +6,9 @@ import { LibraryNotice } from "@/components/library-notice";
 import { Message } from "@/components/message";
 import { MovieStatusForm } from "@/components/movie-status-form";
 import { PageSkeleton } from "@/components/page-skeleton";
+import { RatingsStrip, RatingsStripSkeleton } from "@/components/ratings-strip";
 import { SchemaSetup } from "@/components/schema-setup";
+import { TitleCredits, TitleCreditsSkeleton } from "@/components/title-credits";
 import { TitleStage } from "@/components/title-stage";
 import { firstQueryValue, formatRuntime, parsePositiveInt } from "@/lib/format";
 import { titleOverview } from "@/lib/overview";
@@ -66,7 +68,12 @@ async function MovieScreen({ params, searchParams }: MoviePageProps) {
         </Message>
       ) : null}
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
-        <MovieHeader movie={result.data} />
+        <div className="grid gap-3">
+          <MovieHeader movie={result.data} />
+          <Suspense fallback={<RatingsStripSkeleton />}>
+            <RatingsStrip kind="movie" id={result.data.id} />
+          </Suspense>
+        </div>
         {progress.ok || progress.error === "schema" ? (
           <MovieStatusForm
             movieId={result.data.id}
@@ -77,6 +84,9 @@ async function MovieScreen({ params, searchParams }: MoviePageProps) {
           />
         ) : null}
       </div>
+      <Suspense fallback={<TitleCreditsSkeleton />}>
+        <TitleCredits kind="movie" id={result.data.id} title={result.data.title} />
+      </Suspense>
     </div>
   );
 }

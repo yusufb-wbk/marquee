@@ -37,6 +37,7 @@ export type SeasonSummary = {
   name: string;
   episodeCount: number;
   airDate: string | null;
+  posterUrl: string | null;
 };
 
 export type AiringEpisode = {

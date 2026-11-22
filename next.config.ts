@@ -45,6 +45,8 @@ const securityHeaders = [
       "connect-src 'self'",
       "worker-src 'self'",
       "manifest-src 'self'",
+      // Trailers play in YouTube's privacy-enhanced player.
+      "frame-src https://www.youtube-nocookie.com",
       "frame-ancestors 'self'",
       "base-uri 'self'",
       formAction,
@@ -71,6 +73,12 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "image.tmdb.org",
         pathname: "/t/p/**",
+      },
+      // Trailer stills, shown until the trailer is played.
+      {
+        protocol: "https",
+        hostname: "i.ytimg.com",
+        pathname: "/vi/**",
       },
     ],
   },

@@ -1,9 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 
 import { EpisodeBoard } from "@/components/episode-board";
 import { PageSkeleton } from "@/components/page-skeleton";
+import { formatAirDate } from "@/lib/format";
 import { episodeKey } from "@/lib/progress";
 import type { Episode, SeasonSummary } from "@/lib/tmdb/types";
 
@@ -70,7 +72,10 @@ export function SeasonBrowser({
   initialWatched,
   showTracked,
   today,
+  startOpen = true,
 }: {
+  /** Open the first season's episodes on load; false starts with every card closed. */
+  startOpen?: boolean;
   csrf: string;
   showId: number;
   seasons: SeasonSummary[];
@@ -82,6 +87,8 @@ export function SeasonBrowser({
   today: string;
 }) {
   const [seasonNumber, setSeasonNumber] = useState(initialSeasonNumber);
+  // The open season's episodes show under its card; null when all cards are closed.
+  const [open, setOpen] = useState<number | null>(startOpen ? initialSeasonNumber : null);
   const [seasonName, setSeasonName] = useState(initialSeasonName);
   const [episodes, setEpisodes] = useState(initialEpisodes);
   const [watched, setWatched] = useState(
@@ -93,9 +100,15 @@ export function SeasonBrowser({
   const nextPath = `/tv/${showId}?season=${seasonNumber}`;
 
   async function openSeason(nextSeason: number) {
-    if (nextSeason === seasonNumber || loading) {
+    if (loading) {
       return;
     }
+    if (nextSeason === seasonNumber) {
+      // Tapping the open card closes it; tapping it again reopens without a fetch.
+      setOpen((current) => (current === nextSeason ? null : nextSeason));
+      return;
+    }
+    setOpen(nextSeason);
     setLoading(true);
     setNotice(null);
     let response: Response;
@@ -123,52 +136,125 @@ export function SeasonBrowser({
     window.history.replaceState(null, "", `/tv/${showId}?season=${nextSeason}`);
   }
 
+  // Regular seasons in order, specials last.
+  const ordered = [
+    ...seasons.filter((season) => season.seasonNumber > 0),
+    ...seasons.filter((season) => season.seasonNumber === 0),
+  ];
+
   return (
-    <div className="grid gap-4">
-      <nav aria-label="Seasons" className="flex gap-2 overflow-x-auto pb-1">
-        {seasons.map((season) => {
-          const selected = season.seasonNumber === seasonNumber;
+    <section className="grid gap-3" aria-label="Seasons">
+      <h2 className="font-display text-2xl">
+        {ordered.filter((season) => season.seasonNumber > 0).length === 1
+          ? "1 season"
+          : `${ordered.filter((season) => season.seasonNumber > 0).length} seasons`}
+      </h2>
+      <ol className="grid gap-2">
+        {ordered.map((season) => {
+          const isOpen = open === season.seasonNumber;
+          const watchedHere = [...watched].filter((key) =>
+            key.startsWith(`${season.seasonNumber}:`),
+          ).length;
+          const total = season.episodeCount;
+          const complete = total > 0 && watchedHere >= total;
+          const percent = total > 0 ? Math.min(100, Math.round((watchedHere / total) * 100)) : 0;
+          const aired = formatAirDate(season.airDate);
           return (
-            <a
-              key={season.seasonNumber}
-              href={`/tv/${showId}?season=${season.seasonNumber}`}
-              aria-current={selected ? "page" : undefined}
-              onClick={(event) => {
-                event.preventDefault();
-                void openSeason(season.seasonNumber);
-              }}
-              className={`inline-flex h-11 shrink-0 items-center rounded-full border px-4 text-sm font-medium ${
-                selected
-                  ? "border-accent bg-accent text-accent-ink"
-                  : "border-line bg-card text-foreground"
-              }`}
-            >
-              {season.name}
-            </a>
+            <li key={season.seasonNumber} className="grid gap-3">
+              <a
+                href={`/tv/${showId}?season=${season.seasonNumber}`}
+                aria-expanded={isOpen}
+                onClick={(event) => {
+                  event.preventDefault();
+                  void openSeason(season.seasonNumber);
+                }}
+                className={`flex items-center gap-3 rounded-2xl border bg-card p-2.5 pr-4 transition-colors ${
+                  isOpen ? "border-accent/60" : "border-line hover:border-muted/60"
+                }`}
+              >
+                <span className="relative aspect-[2/3] w-14 shrink-0 overflow-hidden rounded-xl bg-background">
+                  {season.posterUrl ? (
+                    <Image src={season.posterUrl} alt="" fill sizes="56px" className="object-cover" />
+                  ) : null}
+                </span>
+                <span className="grid min-w-0 flex-1 gap-1">
+                  <span className="flex items-center gap-1.5 font-semibold">
+                    <span className="truncate">{season.name}</span>
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={`shrink-0 text-muted transition-transform ${isOpen ? "rotate-180" : ""}`}
+                    >
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </span>
+                  <span className="text-xs text-muted">
+                    {[aired, total > 0 ? `${watchedHere}/${total} episodes` : "No episodes yet"]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                  <span aria-hidden="true" className="h-1.5 rounded-full bg-line">
+                    <span
+                      className={`block h-full rounded-full ${complete ? "bg-notice" : "bg-accent"}`}
+                      style={{ width: `${percent}%` }}
+                    />
+                  </span>
+                </span>
+                <span
+                  aria-label={complete ? "Season watched" : `${watchedHere} of ${total} watched`}
+                  className={`grid size-8 shrink-0 place-items-center rounded-full ${
+                    complete ? "bg-notice text-background" : "border border-line text-muted"
+                  }`}
+                >
+                  {complete ? (
+                    <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m5 12.5 4.5 4.5L19 7.5" />
+                    </svg>
+                  ) : (
+                    <span className="text-[0.65rem] font-semibold tabular-nums">{percent}%</span>
+                  )}
+                </span>
+              </a>
+              {isOpen ? (
+                <div className="rounded-2xl border border-line/60 px-3 pb-1 pt-3 sm:px-4">
+                  {loading || season.seasonNumber !== seasonNumber ? (
+                    <PageSkeleton kind="episodes" />
+                  ) : (
+                    <EpisodeBoard
+                      csrf={csrf}
+                      showId={showId}
+                      seasonNumber={seasonNumber}
+                      seasonName={seasonName}
+                      episodes={episodes}
+                      watchedKeys={watched}
+                      showTracked={tracked}
+                      nextPath={nextPath}
+                      today={today}
+                      onWatched={setWatched}
+                      onTracked={() => {
+                        setTracked(true);
+                      }}
+                      compact
+                    />
+                  )}
+                  {notice ? (
+                    <p role="alert" className="pb-3 text-sm text-notice">
+                      {notice}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+            </li>
           );
         })}
-      </nav>
-      {loading ? <PageSkeleton kind="episodes" /> : null}
-      {notice ? (
-        <p role="alert" className="text-sm text-notice">
-          {notice}
-        </p>
-      ) : null}
-      <EpisodeBoard
-        csrf={csrf}
-        showId={showId}
-        seasonNumber={seasonNumber}
-        seasonName={seasonName}
-        episodes={episodes}
-        watchedKeys={watched}
-        showTracked={tracked}
-        nextPath={nextPath}
-        today={today}
-        onWatched={setWatched}
-        onTracked={() => {
-          setTracked(true);
-        }}
-      />
-    </div>
+      </ol>
+    </section>
   );
 }

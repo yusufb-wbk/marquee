@@ -41,7 +41,10 @@ export function EpisodeBoard({
   today,
   onWatched,
   onTracked,
+  compact = false,
 }: {
+  /** Inside a season card: the card shows the name and progress, so only the actions show here. */
+  compact?: boolean;
   csrf: string;
   showId: number;
   seasonNumber: number;
@@ -110,14 +113,16 @@ export function EpisodeBoard({
   return (
     <section className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="grid gap-1">
-          <h2 className="font-display text-2xl">{seasonName}</h2>
-          <p className="text-sm text-muted">
-            {complete
-              ? "Season complete"
-              : `${watchedCount} of ${episodes.length} watched`}
-          </p>
-        </div>
+        {compact ? null : (
+          <div className="grid gap-1">
+            <h2 className="font-display text-2xl">{seasonName}</h2>
+            <p className="text-sm text-muted">
+              {complete
+                ? "Season complete"
+                : `${watchedCount} of ${episodes.length} watched`}
+            </p>
+          </div>
+        )}
         {episodes.length > 0 ? (
           <SeasonWatch
             csrf={csrf}

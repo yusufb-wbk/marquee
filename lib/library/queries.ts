@@ -514,3 +514,20 @@ export async function loadMovieProgress(
 
   return { ok: true, data: movie.data ? mapMovie(movie.data) : null };
 }
+
+/** Your status for every tracked title, keyed "movie:123" / "tv:456". For badges on lists of titles. */
+export async function loadTrackedStatuses(userId: string): Promise<Map<string, string>> {
+  const supabase = await client();
+  const [shows, movies] = await Promise.all([
+    supabase.from("tracked_shows").select("tmdb_id, status").eq("user_id", userId),
+    supabase.from("tracked_movies").select("tmdb_id, status").eq("user_id", userId),
+  ]);
+  const statuses = new Map<string, string>();
+  for (const row of shows.data ?? []) {
+    statuses.set(`tv:${row.tmdb_id}`, row.status);
+  }
+  for (const row of movies.data ?? []) {
+    statuses.set(`movie:${row.tmdb_id}`, row.status);
+  }
+  return statuses;
+}

@@ -250,6 +250,7 @@ function parseSeasonSummary(value: unknown): SeasonSummary | null {
           : `Season ${seasonNumber}`,
     episodeCount: readCount(value.episode_count),
     airDate: readDate(value.air_date),
+    posterUrl: posterUrl(readPosterPath(value.poster_path)),
   };
 }
 

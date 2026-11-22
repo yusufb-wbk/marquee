@@ -6,6 +6,7 @@ import { connection } from "next/server";
 import { readEnv } from "@/lib/env";
 import { consumeRateLimit, remainingRateLimit } from "@/lib/rate-limit";
 import { normalizeSearchQuery } from "@/lib/search-query";
+import { parsePerson, parseTitleExtras, type Person, type TitleExtras } from "@/lib/tmdb/credits";
 import {
   parseImdbFind,
   parseMovie,
@@ -493,4 +494,59 @@ async function getMovieCached(id: number): Promise<Movie> {
     raiseTmdb(failure("bad_response"));
   }
   return movie;
+}
+
+/** Cast, key crew, the trailer and the IMDb id for a movie or show. */
+export async function getTitleExtras(
+  kind: "movie" | "tv",
+  id: number,
+): Promise<TmdbResult<TitleExtras>> {
+  await connection();
+  const blocked = gateTmdb();
+  if (blocked) {
+    return { ok: false, error: blocked };
+  }
+  return runCached(() => getTitleExtrasCached(kind, id));
+}
+
+async function getTitleExtrasCached(kind: "movie" | "tv", id: number): Promise<TitleExtras> {
+  "use cache: remote";
+  cacheLife("days");
+
+  // Shows use aggregate_credits: one entry per person across all seasons, with episode counts.
+  const credits = kind === "tv" ? "aggregate_credits" : "credits";
+  const body = await tmdbGet(`/${kind}/${id}`, {
+    language: "en-US",
+    append_to_response: `${credits},videos,external_ids`,
+  });
+  const extras = parseTitleExtras(body, kind);
+  if (!extras) {
+    raiseTmdb(failure("bad_response"));
+  }
+  return extras;
+}
+
+/** A person's details and every movie and show they are credited on. */
+export async function getPerson(id: number): Promise<TmdbResult<Person>> {
+  await connection();
+  const blocked = gateTmdb();
+  if (blocked) {
+    return { ok: false, error: blocked };
+  }
+  return runCached(() => getPersonCached(id));
+}
+
+async function getPersonCached(id: number): Promise<Person> {
+  "use cache: remote";
+  cacheLife("days");
+
+  const body = await tmdbGet(`/person/${id}`, {
+    language: "en-US",
+    append_to_response: "combined_credits,external_ids",
+  });
+  const person = parsePerson(body);
+  if (!person) {
+    raiseTmdb(failure("bad_response"));
+  }
+  return person;
 }
