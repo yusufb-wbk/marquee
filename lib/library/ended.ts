@@ -1,12 +1,9 @@
 import "server-only";
 
 import { isoDateUTC, showsEndedForNow } from "@/lib/calendar";
-import { mapWithLimit } from "@/lib/concurrency";
 import type { TrackedShow } from "@/lib/library/queries";
-import { lookupNextEpisode, watchedKeys } from "@/lib/library/up-next";
+import { nextEpisodesFor, watchedKeys } from "@/lib/library/up-next";
 import { ratingToDisplay, userRatingLabel } from "@/lib/rating";
-
-const LOOKUP_CONCURRENCY = 8;
 
 export type EndedTitle = {
   id: number;
@@ -22,6 +19,7 @@ export type EndedTitle = {
 };
 
 export async function loadEndedTitles(
+  userId: string,
   shows: readonly TrackedShow[],
   episodes: readonly { showTmdbId: number; seasonNumber: number; episodeNumber: number }[],
 ): Promise<EndedTitle[]> {
@@ -33,12 +31,14 @@ export async function loadEndedTitles(
     list.push(episode);
     episodesByShow.set(episode.showTmdbId, list);
   }
-  // A few shows at a time: a long watching list would otherwise fire hundreds of TMDB requests at once.
-  const lookedUp = await mapWithLimit(watching, LOOKUP_CONCURRENCY, async (show) => {
-    const keys = watchedKeys(episodesByShow.get(show.tmdbId) ?? []);
-    const next = await lookupNextEpisode(show.tmdbId, keys);
-    return { show, next };
-  });
+  const { next } = await nextEpisodesFor(
+    userId,
+    watching.map((show) => ({
+      tmdbId: show.tmdbId,
+      watched: watchedKeys(episodesByShow.get(show.tmdbId) ?? []),
+    })),
+  );
+  const lookedUp = watching.map((show, index) => ({ show, next: next[index]! }));
 
   return showsEndedForNow(lookedUp, today).map((item) => ({
     id: item.show.tmdbId,

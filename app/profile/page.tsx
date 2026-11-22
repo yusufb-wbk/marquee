@@ -102,7 +102,7 @@ async function ProfileScreen({ searchParams }: PageProps) {
                 endedSlot={
                   // Needs a TMDB lookup per watching show, so it streams in after the page shows.
                   <Suspense fallback={null}>
-                    <EndedLink shows={library.data.shows} episodes={library.data.episodes} />
+                    <EndedLink userId={user.id} shows={library.data.shows} episodes={library.data.episodes} />
                   </Suspense>
                 }
               />
@@ -126,13 +126,15 @@ async function ProfileScreen({ searchParams }: PageProps) {
 }
 
 async function EndedLink({
+  userId,
   shows,
   episodes,
 }: {
+  userId: string;
   shows: TrackedShow[];
   episodes: { showTmdbId: number; seasonNumber: number; episodeNumber: number }[];
 }) {
-  const ended = await loadEndedTitles(shows, episodes);
+  const ended = await loadEndedTitles(userId, shows, episodes);
   if (ended.length === 0) {
     return null;
   }

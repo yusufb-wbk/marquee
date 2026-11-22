@@ -10,12 +10,9 @@ import { isoDateUTC, showsAiringThisYear } from "@/lib/calendar";
 import { firstQueryValue } from "@/lib/format";
 import type { TrackedShow } from "@/lib/library/queries";
 import { loadUpNextLibrary } from "@/lib/library/queries";
-import { lookupNextEpisode, watchedKeys } from "@/lib/library/up-next";
+import { nextEpisodesFor, prefetchSchedules, type SavedSchedules, watchedKeys } from "@/lib/library/up-next";
 import { requireUser } from "@/lib/require-user";
-import { mapWithLimit } from "@/lib/concurrency";
 import { timed } from "@/lib/timed";
-
-const UP_NEXT_CONCURRENCY = 8;
 
 export const metadata = {
   title: "Up next",
@@ -35,6 +32,8 @@ export default function UpNextPage({ searchParams }: PageProps) {
 
 async function UpNextScreen({ searchParams }: PageProps) {
   const user = await requireUser();
+  // Saved schedules load alongside the library rather than after it.
+  const schedules = prefetchSchedules(user.id);
   const { value: library, ms: libraryMs } = await timed(() => loadUpNextLibrary(user.id));
   const code = firstQueryValue((await searchParams).library);
 
@@ -48,15 +47,19 @@ async function UpNextScreen({ searchParams }: PageProps) {
           Try again in a moment.
         </Message>
       ) : null}
-      {library.ok ? <Queue library={library.data} libraryMs={libraryMs} /> : null}
+      {library.ok ? <Queue userId={user.id} schedules={schedules} library={library.data} libraryMs={libraryMs} /> : null}
     </div>
   );
 }
 
 async function Queue({
+  userId,
+  schedules,
   library,
   libraryMs,
 }: {
+  userId: string;
+  schedules: Promise<SavedSchedules>;
   libraryMs: number;
   library: {
     shows: TrackedShow[];
@@ -77,18 +80,23 @@ async function Queue({
       show.status === "watching" ||
       (show.status === "watchlist" && episodesByShow.has(show.tmdbId)),
   );
-  // A few shows at a time, so a long list does not fire hundreds of TMDB requests at once.
-  const { value: queued, ms: lookupMs } = await timed(() =>
-    mapWithLimit(watching, UP_NEXT_CONCURRENCY, async (show) => {
-      const keys = watchedKeys(episodesByShow.get(show.tmdbId) ?? []);
-      const next = await lookupNextEpisode(show.tmdbId, keys);
-      return { show, next };
-    }),
+  const { value: lookup, ms: lookupMs } = await timed(() =>
+    nextEpisodesFor(
+      userId,
+      watching.map((show) => ({
+        tmdbId: show.tmdbId,
+        watched: watchedKeys(episodesByShow.get(show.tmdbId) ?? []),
+      })),
+      schedules,
+    ),
   );
+  const queued = watching.map((show, index) => ({ show, next: lookup.next[index]! }));
 
   // One line per load, so slow pages can be traced to the database or to TMDB.
+  const { saved, fetched, stale } = lookup.stats;
   console.info(
-    `Up next: library ${libraryMs}ms, next episodes ${lookupMs}ms for ${watching.length} shows`,
+    `Up next: library ${libraryMs}ms, next episodes ${lookupMs}ms for ${watching.length} shows ` +
+      `(${saved} saved, ${fetched} from TMDB, ${stale} to refresh)`,
   );
   const waiting = showsAiringThisYear(queued, today).slice().sort(byAirDate);
   // Shows whose next episode could not be loaded (often TMDB pacing) are not "nothing to watch".

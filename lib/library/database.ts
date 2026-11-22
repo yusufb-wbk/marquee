@@ -45,6 +45,15 @@ export type MovieRow = {
   updated_at: string;
 };
 
+export type ShowScheduleRow = {
+  user_id: string;
+  tmdb_id: number;
+  /** A `StoredSeason[]` from lib/schedule.ts. */
+  seasons: unknown;
+  show_status: string | null;
+  refreshed_at: string;
+};
+
 type Table<Row, Insert, Update> = {
   Row: Row;
   Insert: Insert;
@@ -134,6 +143,11 @@ export type Database = {
           imdb_id?: string | null;
           updated_at?: string;
         }
+      >;
+      show_schedules: Table<
+        ShowScheduleRow,
+        Omit<ShowScheduleRow, "refreshed_at"> & { refreshed_at?: string },
+        Partial<Omit<ShowScheduleRow, "user_id" | "tmdb_id">>
       >;
     };
     Views: Record<string, never>;

@@ -37,6 +37,7 @@ async function EndedScreen() {
       ) : null}
       {library.ok ? (
         <EndedList
+          userId={user.id}
           shows={library.data.shows}
           episodes={library.data.episodes}
         />
@@ -46,13 +47,15 @@ async function EndedScreen() {
 }
 
 async function EndedList({
+  userId,
   shows,
   episodes,
 }: {
-  shows: Parameters<typeof loadEndedTitles>[0];
-  episodes: Parameters<typeof loadEndedTitles>[1];
+  userId: string;
+  shows: Parameters<typeof loadEndedTitles>[1];
+  episodes: Parameters<typeof loadEndedTitles>[2];
 }) {
-  const titles = await loadEndedTitles(shows, episodes);
+  const titles = await loadEndedTitles(userId, shows, episodes);
   if (titles.length === 0) {
     return <p className="text-muted">Nothing has ended.</p>;
   }

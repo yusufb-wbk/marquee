@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
       };
     }
     const next = await lookupNextEpisode(
+      userId,
       showId,
       watchedKeys(progress.data.episodes),
     );

@@ -126,3 +126,27 @@ alter table public.tracked_movies drop constraint if exists tracked_movies_imdb_
 alter table public.tracked_movies
   add constraint tracked_movies_imdb_id_check
   check (imdb_id is null or imdb_id ~ '^tt[0-9]{7,10}$');
+
+-- Saved episode schedules, so Up next can work out your next episode without asking TMDB
+-- for every show on every load. Each row is refreshed from TMDB when it goes stale.
+-- Safe to run again on an existing project.
+create table if not exists public.show_schedules (
+  user_id uuid not null references auth.users (id) on delete cascade,
+  tmdb_id integer not null check (tmdb_id > 0),
+  seasons jsonb not null,
+  show_status text,
+  refreshed_at timestamptz not null default now(),
+  primary key (user_id, tmdb_id)
+);
+
+alter table public.show_schedules enable row level security;
+
+drop policy if exists "show_schedules_own" on public.show_schedules;
+create policy "show_schedules_own"
+  on public.show_schedules
+  for all
+  to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+grant select, insert, update, delete on public.show_schedules to authenticated;
