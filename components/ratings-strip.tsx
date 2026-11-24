@@ -1,7 +1,8 @@
 import { YourRatingChip } from "@/components/your-rating-chip";
 import { readCsrfToken } from "@/components/csrf-field";
 import { getExternalRatings } from "@/lib/mdblist";
-import { RATING_LABELS, scoreWord, tmdbRating, type ExternalRating } from "@/lib/ratings";
+import { RATING_LABELS, scoreColor, scoreWord, tmdbRating, type ExternalRating } from "@/lib/ratings";
+import { ScoreRing } from "@/components/score-ring";
 import { getTitleExtras } from "@/lib/tmdb/client";
 
 /** Scores from other sites under the title card. Falls back to TMDB's score without an MDBList key. */
@@ -61,7 +62,10 @@ function RatingChip({ rating }: { rating: ExternalRating }) {
         ) : null}
       </span>
       <span aria-hidden="true" className="h-1 rounded-full bg-line">
-        <span className="block h-full rounded-full bg-accent" style={{ width: `${rating.score}%` }} />
+        <span
+          className="block h-full rounded-full"
+          style={{ width: `${rating.score}%`, background: scoreColor(rating.score) }}
+        />
       </span>
     </>
   );
@@ -77,21 +81,18 @@ function RatingChip({ rating }: { rating: ExternalRating }) {
 
 /** One overall number across every site, so the strip has a headline. */
 function CombinedChip({ score }: { score: number }) {
-  const angle = Math.round((score / 100) * 360);
+  const color = scoreColor(score);
   return (
     <div
-      className="flex h-full min-w-36 items-center gap-3 rounded-2xl border border-accent/60 bg-card px-3 py-2.5"
+      className="flex h-full min-w-36 items-center gap-3 rounded-2xl border bg-card px-3 py-2.5"
+      style={{ borderColor: `color-mix(in srgb, ${color} 60%, transparent)` }}
       title="Combined score across the sites listed, from MDBList"
     >
-      <span
-        aria-hidden="true"
-        className="grid size-10 shrink-0 place-items-center rounded-full"
-        style={{ background: `conic-gradient(var(--accent) ${angle}deg, var(--line) 0deg)` }}
-      >
-        <span className="size-7 rounded-full bg-card" />
-      </span>
+      <ScoreRing score={score} size="lg" />
       <span className="grid gap-0.5">
-        <span className="font-display text-2xl leading-none tabular-nums">{Math.round(score)}</span>
+        <span className="font-display text-2xl leading-none tabular-nums" style={{ color }}>
+          {Math.round(score)}
+        </span>
         <span className="text-[0.65rem] font-semibold uppercase tracking-wide text-muted">
           {scoreWord(score)}
         </span>

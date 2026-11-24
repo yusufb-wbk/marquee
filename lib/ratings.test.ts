@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { parseMdblist, scoreWord, tmdbRating } from "./ratings.ts";
+import { parseMdblist, scoreQuarter, scoreWord, tmdbRating } from "./ratings.ts";
 
 describe("parseMdblist", () => {
   it("formats each site its own way and keeps a fixed order", () => {
@@ -53,5 +53,18 @@ describe("tmdbRating", () => {
   it("needs a few votes before it shows", () => {
     assert.deepEqual(tmdbRating(7.4, 2), []);
     assert.equal(tmdbRating(7.4, 900)[0]?.display, "7.4");
+  });
+});
+
+describe("scoreQuarter", () => {
+  it("splits 0–100 into quarters", () => {
+    assert.equal(scoreQuarter(0), "low");
+    assert.equal(scoreQuarter(24.9), "low");
+    assert.equal(scoreQuarter(25), "mid-low");
+    assert.equal(scoreQuarter(49), "mid-low");
+    assert.equal(scoreQuarter(50), "mid-high");
+    assert.equal(scoreQuarter(74), "mid-high");
+    assert.equal(scoreQuarter(75), "high");
+    assert.equal(scoreQuarter(100), "high");
   });
 });

@@ -8,6 +8,8 @@ import { FilterRow } from "@/components/trending-browser";
 import { ShowMore, useIncremental } from "@/components/incremental-list";
 import { StarIcon, TrashIcon } from "@/components/icons";
 import { Poster } from "@/components/poster";
+import { ScoreRing } from "@/components/score-ring";
+import { scoreColor } from "@/lib/ratings";
 import { useScores } from "@/components/use-scores";
 import {
   catalogGenres,
@@ -211,19 +213,14 @@ function ShelfRow({
 }
 
 function CombinedBadge({ score }: { score: number }) {
-  const angle = Math.round((score / 100) * 360);
+  const color = scoreColor(score);
   return (
     <span
-      className="inline-flex h-7 items-center gap-1.5 rounded-full border border-line px-2 text-sm font-semibold tabular-nums"
+      className="inline-flex h-7 items-center gap-1.5 rounded-full border px-2 text-sm font-semibold tabular-nums"
+      style={{ borderColor: `color-mix(in srgb, ${color} 45%, transparent)`, color }}
       title="Combined score from MDBList"
     >
-      <span
-        aria-hidden="true"
-        className="grid size-4 place-items-center rounded-full"
-        style={{ background: `conic-gradient(var(--accent) ${angle}deg, var(--line) 0deg)` }}
-      >
-        <span className="size-2 rounded-full bg-card" />
-      </span>
+      <ScoreRing score={score} size="sm" />
       {Math.round(score)}
     </span>
   );

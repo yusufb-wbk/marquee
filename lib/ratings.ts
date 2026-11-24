@@ -92,6 +92,32 @@ export function scoreWord(score: number): string {
   return "Poor";
 }
 
+export type ScoreQuarter = "low" | "mid-low" | "mid-high" | "high";
+
+/** Which quarter of 0–100 a score falls in: 0–24, 25–49, 50–74 or 75–100. */
+export function scoreQuarter(score: number): ScoreQuarter {
+  if (score >= 75) return "high";
+  if (score >= 50) return "mid-high";
+  if (score >= 25) return "mid-low";
+  return "low";
+}
+
+/**
+ * Colours for each quarter, tuned for the dark background. Kept here, not as CSS
+ * variables, because they are only used in inline styles and the CSS build drops
+ * variables it never sees used.
+ */
+const QUARTER_COLORS: Record<ScoreQuarter, string> = {
+  low: "#f2735f",
+  "mid-low": "#f09a48",
+  "mid-high": "#e6cf52",
+  high: "#6fcf87",
+};
+
+export function scoreColor(score: number): string {
+  return QUARTER_COLORS[scoreQuarter(score)];
+}
+
 /** MDBList gives site paths ("/m/fight_club") or ids, not full links. */
 function sourceUrl(
   source: RatingSource,
